@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  user_id      Int      @id @default(autoincrement())
+  full_name    String   @db.VarChar(50)
+  email        String   @unique @db.VarChar(50)
+  password     String   @db.VarChar(255)
+  dateOfBirth  DateTime @db.Date
+  avatar_url   String
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  nickname     String?  @db.VarChar(50)
+
+  playlists     Playlist[]
+  songs         Song[]
+  albums        Album[]
+  followers     Follow[] @relation("Người theo dõi")
+  followings    Follow[] @relation("Đang theo dõi")
+  roomsCreated  Room[]   @relation("RoomCreator")
+  rooms         User_Room[]
+  sentMessages  Message[] @relation("Tin nhắn gửi đi")
+  receivedMessages Message[] @relation("Tin nhắn nhận được")
+  notifications Notification[]
+}
+
+model Playlist {
+  playlist_id     Int      @id @default(autoincrement())
+  title           String?
+  description     String?  @db.Text
+  cover_image_url String?
+  visibility      String   @db.VarChar(10)
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+  updated_at      DateTime @updatedAt @db.Timestamp(0)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  songs  Playlist_Song[]
+}
+
+model Song {
+  song_id     Int      @id @default(autoincrement())
+  title       String
+  release     DateTime @db.Date
+  audio_url   String
+  description String?  @db.Text
+  genre       String
+  composer    String
+  singer      String
+  lyrics      String?  @db.LongText
+
+  userId  Int
+  albumId Int?
+
+  user          User             @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  album         Album?           @relation(fields: [albumId], references: [album_id], onDelete: SetNull)
+  playlists     Playlist_Song[]
+  notifications Notification[]
+  room          Room?
+}
+
+model Album {
+  album_id       Int      @id @default(autoincrement())
+  title          String
+  release        DateTime @db.Date
+  cover_image_url String?
+  description    String?  @db.Text
+
+  userId        Int
+  user          User           @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  songs         Song[]
+  notifications Notification[]
+}
+
+model Room {
+  room_id    Int      @id @default(autoincrement())
+  room_name  String   @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  created_by Int
+  songId     Int      @unique
+
+  user     User   @relation("RoomCreator", fields: [created_by], references: [user_id], onDelete: Cascade)
+  song     Song   @relation(fields: [songId], references: [song_id], onDelete: Cascade)
+  users    User_Room[]
+  messages Message[]
+}
+
+model Notification {
+  notification_id Int      @id @default(autoincrement())
+  content         String   @db.Text
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+  is_read         Boolean  @default(false)
+
+  userId  Int
+  albumId Int?
+  songId  Int?
+
+  user  User   @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  album Album? @relation(fields: [albumId], references: [album_id], onDelete: SetNull)
+  song  Song?  @relation(fields: [songId], references: [song_id], onDelete: SetNull)
+}
+
+model Message {
+  message_id Int      @id @default(autoincrement())
+  content    String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  sender_id   Int
+  receiver_id Int?
+  roomId      Int
+
+  sender   User  @relation("Tin nhắn gửi đi", fields: [sender_id], references: [user_id], onDelete: Cascade)
+  receiver User? @relation("Tin nhắn nhận được", fields: [receiver_id], references: [user_id], onDelete: SetNull)
+  room     Room  @relation(fields: [roomId], references: [room_id], onDelete: Cascade)
+}
+
+model Playlist_Song {
+  playlistId Int
+  songId     Int
+  added_at   DateTime @default(now()) @db.Timestamp(0)
+
+  playlist Playlist @relation(fields: [playlistId], references: [playlist_id], onDelete: Cascade)
+  song     Song     @relation(fields: [songId], references: [song_id], onDelete: Cascade)
+
+  @@id([playlistId, songId])
+}
+
+model User_Room {
+  userId     Int
+  roomId     Int
+  jointed_at DateTime @default(now()) @db.Timestamp(0)
+  role       String   @db.VarChar(20)
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [room_id], onDelete: Cascade)
+
+  @@id([userId, roomId])
+}
+
+model Follow {
+  follower_id  Int
+  following_id Int
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+
+  follower  User @relation("Người theo dõi", fields: [follower_id], references: [user_id], onDelete: Cascade)
+  following User @relation("Đang theo dõi", fields: [following_id], references: [user_id], onDelete: Cascade)
+
+  @@id([follower_id, following_id])
+}
