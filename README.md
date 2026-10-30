@@ -1,6 +1,16 @@
 # Music_Application
 
-// Cài đặt môi trường: npm install
+// Cài đặt môi trường: npm install, npm install --save-dev nodemon
+// Cấu hình trong package.json: 
+Thêm script dev:
+{
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  }
+}
+Nếu file khởi chạy nằm trong src/server.js thì thay index.js bằng src/server.js.
+// Chạy dự án: npm run dev.
 // Tạo csdl qua Prisma + MySQL
 - Tạo csdl trong MySQL
 - Tạo file .env setup đường dẫn: DATABASE_URL="mysql://root:MẬT_KHẨU_CSDL@localhost:3306/TÊN_CSDL"
