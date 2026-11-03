@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "./services/api";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./services/context/AuthContext";
 import "./App.css";
 
 function App() {
