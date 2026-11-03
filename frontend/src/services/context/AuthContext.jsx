@@ -13,7 +13,6 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-
       try {
         const data = await apiRequest("/auth/me");
         setUser(data.user);
@@ -24,7 +23,6 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     }
-
     restoreSession();
   }, []);
 
@@ -48,13 +46,24 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
+  async function updateUser(data) {
+    const result = await apiRequest("/users/me", {
+      method: "PATCH",
+      body: data,
+    });
+    setUser(result.user);
+    return result.user;
+  }
+
   function logout() {
     clearToken();
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
