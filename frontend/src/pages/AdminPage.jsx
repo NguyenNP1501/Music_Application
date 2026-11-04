@@ -37,6 +37,8 @@ export default function AdminPage() {
   const [keyword, setKeyword] = useState("");
   const [songForm, setSongForm] = useState(emptySong);
   const [albumForm, setAlbumForm] = useState(emptyAlbum);
+  const [editingSongId, setEditingSongId] = useState(null);
+  const [editingAlbumId, setEditingAlbumId] = useState(null);
   const [showSongForm, setShowSongForm] = useState(false);
   const [showAlbumForm, setShowAlbumForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -170,6 +172,52 @@ export default function AdminPage() {
     }
   }
 
+  function startEditSong(song) {
+    setEditingSongId(song.song_id);
+    setSongForm({
+      title: song.title || "",
+      singer: song.singer || "",
+      composer: song.composer || "",
+      genre: song.genre || "",
+      audio_url: song.audio_url || "",
+      Albumalbum_id: String(song.Albumalbum_id || ""),
+      release: song.release
+        ? new Date(song.release).toISOString().slice(0, 10)
+        : "",
+      description: song.description || "",
+    });
+    setShowSongForm(true);
+    setError("");
+    setMessage("");
+  }
+
+  async function updateSong(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest(`/songs/${editingSongId}`, {
+        method: "PATCH",
+        body: {
+          ...songForm,
+          Albumalbum_id: Number(songForm.Albumalbum_id),
+        },
+      });
+
+      setSongForm(emptySong);
+      setEditingSongId(null);
+      setShowSongForm(false);
+      setMessage("Đã cập nhật bài hát.");
+      await loadSongs(keyword);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function deleteSong(song) {
     if (!window.confirm(`Xóa bài hát "${song.title}"?`)) return;
 
@@ -197,6 +245,45 @@ export default function AdminPage() {
       setAlbumForm(emptyAlbum);
       setShowAlbumForm(false);
       setMessage("Đã thêm album.");
+      await loadAlbums(keyword);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEditAlbum(album) {
+    setEditingAlbumId(album.album_id);
+    setAlbumForm({
+      title: album.title || "",
+      release: album.release
+        ? new Date(album.release).toISOString().slice(0, 10)
+        : "",
+      cover_image_url: album.cover_image_url || "",
+      description: album.description || "",
+    });
+    setShowAlbumForm(true);
+    setError("");
+    setMessage("");
+  }
+
+  async function updateAlbum(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest(`/albums/${editingAlbumId}`, {
+        method: "PATCH",
+        body: albumForm,
+      });
+
+      setAlbumForm(emptyAlbum);
+      setEditingAlbumId(null);
+      setShowAlbumForm(false);
+      setMessage("Đã cập nhật album.");
       await loadAlbums(keyword);
     } catch (err) {
       setError(err.message);
@@ -304,8 +391,11 @@ export default function AdminPage() {
       )}
 
       {showSongForm && tab === "songs" && (
-        <form className="admin-form" onSubmit={createSong}>
-          <h3>Thêm bài hát mới</h3>
+        <form
+          className="admin-form"
+          onSubmit={editingSongId ? updateSong : createSong}
+        >
+          <h3>{editingSongId ? "Chỉnh sửa bài hát" : "Thêm bài hát mới"}</h3>
           <div className="admin-form-grid">
             <label>
               Tên bài hát *
@@ -397,15 +487,38 @@ export default function AdminPage() {
               />
             </label>
           </div>
-          <button className="admin-submit" disabled={saving}>
-            {saving ? "Đang lưu..." : "Lưu bài hát"}
-          </button>
+          <div className="admin-form-actions">
+            <button className="admin-submit" disabled={saving}>
+              {saving
+                ? "Đang lưu..."
+                : editingSongId
+                  ? "Cập nhật bài hát"
+                  : "Lưu bài hát"}
+            </button>
+
+            {editingSongId && (
+              <button
+                type="button"
+                className="admin-cancel"
+                onClick={() => {
+                  setEditingSongId(null);
+                  setSongForm(emptySong);
+                  setShowSongForm(false);
+                }}
+              >
+                Hủy
+              </button>
+            )}
+          </div>
         </form>
       )}
 
       {showAlbumForm && tab === "albums" && (
-        <form className="admin-form" onSubmit={createAlbum}>
-          <h3>Thêm album mới</h3>
+        <form
+          className="admin-form"
+          onSubmit={editingAlbumId ? updateAlbum : createAlbum}
+        >
+          <h3>{editingAlbumId ? "Chỉnh sửa album" : "Thêm album mới"}</h3>
           <div className="admin-form-grid">
             <label>
               Tên album *
@@ -452,9 +565,29 @@ export default function AdminPage() {
               />
             </label>
           </div>
-          <button className="admin-submit" disabled={saving}>
-            {saving ? "Đang lưu..." : "Lưu album"}
-          </button>
+          <div className="admin-form-actions">
+            <button className="admin-submit" disabled={saving}>
+              {saving
+                ? "Đang lưu..."
+                : editingAlbumId
+                  ? "Cập nhật album"
+                  : "Lưu album"}
+            </button>
+
+            {editingAlbumId && (
+              <button
+                type="button"
+                className="admin-cancel"
+                onClick={() => {
+                  setEditingAlbumId(null);
+                  setAlbumForm(emptyAlbum);
+                  setShowAlbumForm(false);
+                }}
+              >
+                Hủy
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -525,12 +658,15 @@ export default function AdminPage() {
                   <td>{song.genre}</td>
                   <td>{song.Albumalbum_id}</td>
                   <td>
-                    <button
-                      className="admin-delete"
-                      onClick={() => deleteSong(song)}
-                    >
-                      Xóa
-                    </button>
+                    <div className="admin-row-actions">
+                      <button onClick={() => startEditSong(song)}>Sửa</button>
+                      <button
+                        className="delete"
+                        onClick={() => deleteSong(song)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -557,12 +693,15 @@ export default function AdminPage() {
                       : "—"}
                   </td>
                   <td>
-                    <button
-                      className="admin-delete"
-                      onClick={() => deleteAlbum(album)}
-                    >
-                      Xóa
-                    </button>
+                    <div className="admin-row-actions">
+                      <button onClick={() => startEditAlbum(album)}>Sửa</button>
+                      <button
+                        className="delete"
+                        onClick={() => deleteAlbum(album)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
