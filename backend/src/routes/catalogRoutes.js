@@ -60,7 +60,6 @@ router.get("/songs", async (req, res, next) => {
         user: { select: { user_id: true, full_name: true } },
       },
       orderBy: { song_id: "desc" },
-      take: 200,
     });
 
     res.json({ songs });
@@ -263,7 +262,6 @@ router.get("/albums", async (req, res, next) => {
         songs: true,
       },
       orderBy: { album_id: "desc" },
-      take: 200,
     });
 
     res.json({ albums });

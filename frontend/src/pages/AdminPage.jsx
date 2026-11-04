@@ -219,10 +219,16 @@ export default function AdminPage() {
   }
 
   async function deleteSong(song) {
-    if (!window.confirm(`Xóa bài hát "${song.title}"?`)) return;
+    if (
+      !window.confirm(
+        `Bạn chắc chắn muốn xóa bài hát "${song.title}"?\n\nBài hát cũng sẽ bị xóa khỏi các playlist có chứa bài hát này.`,
+      )
+    )
+      return;
 
     try {
       setError("");
+      setMessage("");
       await apiRequest(`/songs/${song.song_id}`, { method: "DELETE" });
       setMessage("Đã xóa bài hát.");
       await loadSongs(keyword);
@@ -253,6 +259,29 @@ export default function AdminPage() {
       await loadAlbums(keyword);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function createAlbum(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest("/albums", {
+        method: "POST",
+        body: albumForm,
+      });
+
+      setAlbumForm(emptyAlbum);
+      setShowAlbumForm(false);
+      setMessage("Đã thêm album.");
+      await loadAlbums(keyword);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
