@@ -3,6 +3,20 @@ const bcrypt = require("bcryptjs");
 const prisma = require("../config/prisma");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 
+async function runSerializable(task, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await prisma.$transaction(task, {
+        isolationLevel: "Serializable",
+      });
+    } catch (error) {
+      if (error.code !== "P2034" || attempt === retries - 1) {
+        throw error;
+      }
+    }
+  }
+}
+
 router.patch("/me", requireAuth, async (req, res, next) => {
   try {
     const data = {};
@@ -106,23 +120,39 @@ router.patch(
           .json({ message: "Không thể tự hạ quyền tài khoản đang đăng nhập." });
       }
 
-      const target = await prisma.user.findUnique({
-        where: { user_id: userId },
-      });
-      if (!target)
-        return res.status(404).json({ message: "Không tìm thấy tài khoản." });
+      const result = await runSerializable(async (tx) => {
+        const target = await tx.user.findUnique({
+          where: { user_id: userId },
+        });
 
-      if (target.role === "admin" && role === "user") {
-        const count = await prisma.user.count({ where: { role: "admin" } });
-        if (count <= 1) {
-          return res
-            .status(409)
-            .json({ message: "Không thể hạ quyền admin cuối cùng." });
+        if (!target) {
+          return { status: 404, message: "Không tìm thấy tài khoản." };
         }
-      }
 
-      await prisma.user.update({ where: { user_id: userId }, data: { role } });
-      res.json({ message: "Đã cập nhật vai trò tài khoản." });
+        if (target.role === "admin" && role === "user") {
+          const count = await tx.user.count({
+            where: { role: "admin" },
+          });
+
+          if (count <= 1) {
+            return {
+              status: 409,
+              message: "Không thể hạ quyền admin cuối cùng.",
+            };
+          }
+        }
+
+        await tx.user.update({
+          where: { user_id: userId },
+          data: { role },
+        });
+
+        return { status: 200, message: "Đã cập nhật vai trò tài khoản." };
+      });
+
+      return res.status(result.status).json({
+        message: result.message,
+      });
     } catch (error) {
       next(error);
     }
@@ -148,23 +178,38 @@ router.delete(
           .json({ message: "Không thể tự xóa tài khoản đang đăng nhập." });
       }
 
-      const target = await prisma.user.findUnique({
-        where: { user_id: userId },
-      });
-      if (!target)
-        return res.status(404).json({ message: "Không tìm thấy tài khoản." });
+      const result = await runSerializable(async (tx) => {
+        const target = await tx.user.findUnique({
+          where: { user_id: userId },
+        });
 
-      if (target.role === "admin") {
-        const count = await prisma.user.count({ where: { role: "admin" } });
-        if (count <= 1) {
-          return res
-            .status(409)
-            .json({ message: "Không thể xóa admin cuối cùng." });
+        if (!target) {
+          return { status: 404, message: "Không tìm thấy tài khoản." };
         }
-      }
 
-      await prisma.user.delete({ where: { user_id: userId } });
-      res.json({ message: "Đã xóa tài khoản." });
+        if (target.role === "admin") {
+          const count = await tx.user.count({
+            where: { role: "admin" },
+          });
+
+          if (count <= 1) {
+            return {
+              status: 409,
+              message: "Không thể xóa admin cuối cùng.",
+            };
+          }
+        }
+
+        await tx.user.delete({
+          where: { user_id: userId },
+        });
+
+        return { status: 200, message: "Đã xóa tài khoản." };
+      });
+
+      return res.status(result.status).json({
+        message: result.message,
+      });
     } catch (error) {
       next(error);
     }
