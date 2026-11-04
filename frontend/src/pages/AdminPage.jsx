@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
 import PageTitles from "../components/common/PageTitles";
+import Pagination from "../components/common/Pagination";
+
 import "./AdminPage.css";
 
 const tabs = [
@@ -41,6 +43,13 @@ export default function AdminPage() {
   const [editingAlbumId, setEditingAlbumId] = useState(null);
   const [showSongForm, setShowSongForm] = useState(false);
   const [showAlbumForm, setShowAlbumForm] = useState(false);
+  const [songPage, setSongPage] = useState(1);
+  const [albumPage, setAlbumPage] = useState(1);
+  const [songTotalPages, setSongTotalPages] = useState(1);
+  const [albumTotalPages, setAlbumTotalPages] = useState(1);
+  const [songTotal, setSongTotal] = useState(0);
+  const [albumTotal, setAlbumTotal] = useState(0);
+  const [allAlbums, setAllAlbums] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -53,18 +62,29 @@ export default function AdminPage() {
     setUsers(data.users || []);
   }
 
-  async function loadSongs(q = "") {
+  async function loadSongs(q = keyword, page = songPage) {
     const data = await apiRequest(
-      `/songs${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+      `/songs?page=${page}&limit=12&q=${encodeURIComponent(q)}`,
     );
     setSongs(data.songs || []);
+    setSongPage(page);
+    setSongTotal(data.pagination?.total || 0);
+    setSongTotalPages(data.pagination?.totalPages || 1);
   }
 
-  async function loadAlbums(q = "") {
+  async function loadAlbums(q = keyword, page = albumPage) {
     const data = await apiRequest(
-      `/albums${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+      `/albums?page=${page}&limit=12&q=${encodeURIComponent(q)}`,
     );
     setAlbums(data.albums || []);
+    setAlbumPage(page);
+    setAlbumTotal(data.pagination?.total || 0);
+    setAlbumTotalPages(data.pagination?.totalPages || 1);
+  }
+
+  async function loadAllAlbums() {
+    const data = await apiRequest("/albums?limit=100");
+    setAllAlbums(data.albums || []);
   }
 
   async function loadCurrentTab(q = keyword) {
@@ -73,8 +93,8 @@ export default function AdminPage() {
 
     try {
       if (tab === "users") await loadUsers(q);
-      if (tab === "songs") await loadSongs(q);
-      if (tab === "albums") await loadAlbums(q);
+      if (tab === "songs") await loadSongs(q, 1);
+      if (tab === "albums") await loadAlbums(q, 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -88,22 +108,20 @@ export default function AdminPage() {
       setError("");
 
       try {
-        const [userData, songData, albumData] = await Promise.all([
+        const [userData] = await Promise.all([
           apiRequest("/users/admin/users"),
-          apiRequest("/songs"),
-          apiRequest("/albums"),
+          loadSongs("", 1),
+          loadAlbums("", 1),
+          loadAllAlbums(),
         ]);
 
         setUsers(userData.users || []);
-        setSongs(songData.songs || []);
-        setAlbums(albumData.albums || []);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-
     loadDashboard();
   }, []);
 
@@ -164,7 +182,7 @@ export default function AdminPage() {
       setSongForm(emptySong);
       setShowSongForm(false);
       setMessage("Đã thêm bài hát.");
-      await loadSongs(keyword);
+      await loadSongs(keyword, 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -210,7 +228,7 @@ export default function AdminPage() {
       setEditingSongId(null);
       setShowSongForm(false);
       setMessage("Đã cập nhật bài hát.");
-      await loadSongs(keyword);
+      await loadSongs(keyword, 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -231,7 +249,7 @@ export default function AdminPage() {
       setMessage("");
       await apiRequest(`/songs/${song.song_id}`, { method: "DELETE" });
       setMessage("Đã xóa bài hát.");
-      await loadSongs(keyword);
+      await loadSongs(keyword, 1);
     } catch (err) {
       setError(err.message);
     }
@@ -348,11 +366,11 @@ export default function AdminPage() {
         </div>
         <div>
           <span>Bài hát</span>
-          <strong>{songs.length}</strong>
+          <strong>{songTotal}</strong>
         </div>
         <div>
           <span>Album</span>
-          <strong>{albums.length}</strong>
+          <strong>{albumTotal}</strong>
         </div>
       </div>
 
@@ -478,7 +496,7 @@ export default function AdminPage() {
                 required
               >
                 <option value="">Chọn album</option>
-                {albums.map((album) => (
+                {allAlbums.map((album) => (
                   <option key={album.album_id} value={album.album_id}>
                     {album.title}
                   </option>
@@ -659,73 +677,107 @@ export default function AdminPage() {
             </tbody>
           </table>
         ) : tab === "songs" ? (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Bài hát</th>
-                <th>Ca sĩ</th>
-                <th>Thể loại</th>
-                <th>Album ID</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {songs.map((song) => (
-                <tr key={song.song_id}>
-                  <td>{song.title}</td>
-                  <td>{song.singer}</td>
-                  <td>{song.genre}</td>
-                  <td>{song.Albumalbum_id}</td>
-                  <td>
-                    <div className="admin-row-actions">
-                      <button onClick={() => startEditSong(song)}>Sửa</button>
-                      <button
-                        className="delete"
-                        onClick={() => deleteSong(song)}
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
+          <>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Bài hát</th>
+                  <th>Ca sĩ</th>
+                  <th>Thể loại</th>
+                  <th>Album ID</th>
+                  <th>Thao tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {songs.map((song) => (
+                  <tr key={song.song_id}>
+                    <td>{song.title}</td>
+                    <td>{song.singer}</td>
+                    <td>{song.genre}</td>
+                    <td>{song.Albumalbum_id}</td>
+                    <td>
+                      <div className="admin-row-actions">
+                        <button onClick={() => startEditSong(song)}>Sửa</button>
+                        <button
+                          className="delete"
+                          onClick={() => deleteSong(song)}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={songPage}
+              totalPages={songTotalPages}
+              onChange={async (nextPage) => {
+                setLoading(true);
+                try {
+                  await loadSongs(keyword, nextPage);
+                } catch (err) {
+                  setError(err.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+          </>
         ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Album</th>
-                <th>Số bài hát</th>
-                <th>Ngày phát hành</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {albums.map((album) => (
-                <tr key={album.album_id}>
-                  <td>{album.title}</td>
-                  <td>{album.songs?.length || 0}</td>
-                  <td>
-                    {album.release
-                      ? new Date(album.release).toLocaleDateString("vi-VN")
-                      : "—"}
-                  </td>
-                  <td>
-                    <div className="admin-row-actions">
-                      <button onClick={() => startEditAlbum(album)}>Sửa</button>
-                      <button
-                        className="delete"
-                        onClick={() => deleteAlbum(album)}
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
+          <>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Album</th>
+                  <th>Số bài hát</th>
+                  <th>Ngày phát hành</th>
+                  <th>Thao tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {albums.map((album) => (
+                  <tr key={album.album_id}>
+                    <td>{album.title}</td>
+                    <td>{album.songs?.length || 0}</td>
+                    <td>
+                      {album.release
+                        ? new Date(album.release).toLocaleDateString("vi-VN")
+                        : "—"}
+                    </td>
+                    <td>
+                      <div className="admin-row-actions">
+                        <button onClick={() => startEditAlbum(album)}>
+                          Sửa
+                        </button>
+                        <button
+                          className="delete"
+                          onClick={() => deleteAlbum(album)}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={albumPage}
+              totalPages={albumTotalPages}
+              onChange={async (nextPage) => {
+                setLoading(true);
+                try {
+                  await loadAlbums(keyword, nextPage);
+                } catch (err) {
+                  setError(err.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+          </>
         )}
 
         {!loading &&
