@@ -1,122 +1,78 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React from 'react';
+import { PlayerProvider } from './context/PlayerContext';
+import { SongList } from './components/player/SongList';
+import { PlayerBar } from './components/player/PlayerBar';
+import { ErrorBanner } from './components/player/ErrorBanner';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <PlayerProvider>
+      <div
+        style={{
+          minHeight: '100vh',
+          backgroundColor: '#09090b',
+          color: '#f4f4f5',
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          paddingBottom: '100px', // Khoảng trống cho PlayerBar cố định ở đáy
+          boxSizing: 'border-box'
+        }}
+      >
+        {/* Banner hiển thị lỗi mạng / lỗi stream */}
+        <ErrorBanner />
+
+        {/* Header ứng dụng */}
+        <header
+          style={{
+            borderBottom: '1px solid #27272a',
+            backgroundColor: '#18181b',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>🎵</span>
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f4f4f5' }}>
+              Music Streaming Platform
+            </h1>
+          </div>
+          <div
+            style={{
+              fontSize: '12px',
+              backgroundColor: '#27272a',
+              color: '#10b981',
+              padding: '4px 10px',
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                backgroundColor: '#10b981',
+                borderRadius: '50%',
+                display: 'inline-block'
+              }}
+            />
+            HTTP 206 Streaming Active
+          </div>
+        </header>
 
-      <div className="ticks"></div>
+        {/* Nội dung danh sách bài hát */}
+        <main>
+          <SongList />
+        </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Thanh phát nhạc cố định dưới đáy màn hình */}
+        <PlayerBar />
+      </div>
+    </PlayerProvider>
+  );
 }
 
-export default App
+export default App;
