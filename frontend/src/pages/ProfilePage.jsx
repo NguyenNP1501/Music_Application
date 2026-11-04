@@ -37,7 +37,6 @@ export default function ProfilePage() {
       nickname: user.nickname || "",
       avatar_url: user.avatar_url || "",
       dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : "",
-      password: "",
     });
 
     Promise.all([
@@ -70,7 +69,6 @@ export default function ProfilePage() {
 
     try {
       await updateUser(payload);
-      setForm((old) => ({ ...old, password: "" }));
       setMessage("Thông tin cá nhân đã được cập nhật.");
     } catch (err) {
       setError(err.message);

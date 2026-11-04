@@ -3,7 +3,6 @@ const prisma = require("../config/prisma");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const {
   isObject,
-  validatePassword,
   normalizeText,
   normalizeAvatarUrl,
   parseBirthDate,
