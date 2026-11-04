@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../services/api";
-import PageTitle from "../components/common/PageTitle";
+import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 
 export default function ArtistsPage() {

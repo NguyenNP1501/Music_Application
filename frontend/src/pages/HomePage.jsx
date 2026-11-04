@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
-import PageTitle from "../components/common/PageTitle";
+import PageTitle from "../components/common/PageTitles";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
 

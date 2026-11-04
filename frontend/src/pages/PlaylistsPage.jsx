@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
-import PageTitle from "../components/common/PageTitle";
+import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 
 export default function PlaylistsPage() {
