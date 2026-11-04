@@ -1,17 +1,9 @@
-const express = require('express');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const app = require('./app');
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware đọc JSON từ request
-app.use(express.json());
-
-// API kiểm tra server
-app.get('/', (req, res) => {
-  res.send('Express server is running!');
-});
-
-// Khởi chạy server
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 });
