@@ -55,33 +55,72 @@ router.post("/", requireAuth, async (req, res, next) => {
 router.patch("/:id", requireAuth, async (req, res, next) => {
   try {
     const playlistId = validId(req.params.id);
-    if (!playlistId)
+    if (!playlistId) {
       return res.status(400).json({ message: "ID không hợp lệ." });
+    }
 
     const old = await prisma.playlist.findUnique({
       where: { playlist_id: playlistId },
     });
-    if (!old)
+
+    if (!old) {
       return res.status(404).json({ message: "Không tìm thấy playlist." });
+    }
 
     if (old.Useruser_id !== req.user.user_id) {
-      return res
-        .status(403)
-        .json({ message: "Chỉ chủ playlist mới được sửa." });
+      return res.status(403).json({
+        message: "Chỉ chủ playlist mới được sửa.",
+      });
     }
 
     const data = {};
-    for (const key of ["title", "description", "cover_image_url"]) {
-      if (req.body[key] !== undefined) data[key] = req.body[key];
+
+    if (req.body.title !== undefined) {
+      if (typeof req.body.title !== "string" || !req.body.title.trim()) {
+        return res.status(400).json({
+          message: "Tên playlist không được để trống.",
+        });
+      }
+      data.title = req.body.title.trim();
+    }
+
+    if (req.body.description !== undefined) {
+      if (
+        req.body.description !== null &&
+        typeof req.body.description !== "string"
+      ) {
+        return res.status(400).json({
+          message: "Mô tả playlist không hợp lệ.",
+        });
+      }
+      data.description = req.body.description?.trim() || null;
+    }
+
+    if (req.body.cover_image_url !== undefined) {
+      if (
+        req.body.cover_image_url !== null &&
+        typeof req.body.cover_image_url !== "string"
+      ) {
+        return res.status(400).json({
+          message: "Đường dẫn ảnh không hợp lệ.",
+        });
+      }
+      data.cover_image_url = req.body.cover_image_url || null;
     }
 
     if (req.body.visibility !== undefined) {
       if (!["public", "private"].includes(req.body.visibility)) {
-        return res
-          .status(400)
-          .json({ message: "visibility phải là public hoặc private." });
+        return res.status(400).json({
+          message: "visibility phải là public hoặc private.",
+        });
       }
       data.visibility = req.body.visibility;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        message: "Không có thông tin nào được thay đổi.",
+      });
     }
 
     data.updated_at = new Date();
@@ -91,7 +130,10 @@ router.patch("/:id", requireAuth, async (req, res, next) => {
       data,
     });
 
-    res.json({ playlist });
+    res.json({
+      message: "Đã cập nhật playlist.",
+      playlist,
+    });
   } catch (error) {
     next(error);
   }
@@ -146,14 +188,33 @@ router.post("/:id/songs", requireAuth, async (req, res, next) => {
         .json({ message: "Chỉ chủ playlist mới được thêm bài hát." });
     }
 
-    const item = await prisma.playlist_Song.create({
-      data: {
-        Playlistplaylist_id: playlistId,
-        Songsong_id: songId,
-      },
+    const song = await prisma.song.findUnique({
+      where: { song_id: songId },
     });
 
-    res.status(201).json({ item });
+    if (!song) {
+      return res.status(404).json({
+        message: "Không tìm thấy bài hát.",
+      });
+    }
+
+    try {
+      const item = await prisma.playlist_Song.create({
+        data: {
+          Playlistplaylist_id: playlistId,
+          Songsong_id: songId,
+        },
+      });
+
+      return res.status(201).json({ item });
+    } catch (error) {
+      if (error.code === "P2002") {
+        return res.status(409).json({
+          message: "Bài hát đã tồn tại trong playlist.",
+        });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

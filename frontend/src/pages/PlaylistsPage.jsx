@@ -4,6 +4,8 @@ import { useAuth } from "../services/context/AuthContext";
 import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 
+import "./PlaylistsPage.css";
+
 export default function PlaylistsPage() {
   const { user } = useAuth();
   const [playlists, setPlaylists] = useState([]);
@@ -11,25 +13,29 @@ export default function PlaylistsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("private");
+  const [editingPlaylist, setEditingPlaylist] = useState(null);
   const [selectedSongs, setSelectedSongs] = useState({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  async function loadData() {
+  async function loadData(showLoading = true) {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError("");
+
       const [playlistData, songData] = await Promise.all([
         apiRequest("/playlists"),
         apiRequest("/songs"),
       ]);
+
       setPlaylists(playlistData.playlists || []);
       setSongs(songData.songs || []);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -39,35 +45,101 @@ export default function PlaylistsPage() {
 
   async function createPlaylist(e) {
     e.preventDefault();
+
     try {
+      setSaving(true);
       setError("");
       setMessage("");
+
       await apiRequest("/playlists", {
         method: "POST",
         body: { title, description, visibility },
       });
+
       setTitle("");
       setDescription("");
       setVisibility("private");
       setMessage("Đã tạo playlist.");
-      await loadData();
+      await loadData(false);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(playlist) {
+    setEditingPlaylist({
+      playlist_id: playlist.playlist_id,
+      title: playlist.title || "",
+      description: playlist.description || "",
+      visibility: playlist.visibility || "private",
+    });
+    setError("");
+    setMessage("");
+  }
+
+  function cancelEdit() {
+    setEditingPlaylist(null);
+  }
+
+  function changeEditForm(e) {
+    const { name, value } = e.target;
+    setEditingPlaylist((old) => ({ ...old, [name]: value }));
+  }
+
+  async function updatePlaylist(e) {
+    e.preventDefault();
+
+    if (!editingPlaylist?.title.trim()) {
+      setError("Tên playlist không được để trống.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+      setMessage("");
+
+      await apiRequest(`/playlists/${editingPlaylist.playlist_id}`, {
+        method: "PATCH",
+        body: {
+          title: editingPlaylist.title.trim(),
+          description: editingPlaylist.description.trim(),
+          visibility: editingPlaylist.visibility,
+        },
+      });
+
+      setEditingPlaylist(null);
+      setMessage("Đã cập nhật playlist.");
+      await loadData(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function addSong(playlistId) {
     const songId = selectedSongs[playlistId];
-    if (!songId) return setError("Bạn cần chọn bài hát trước.");
+
+    if (!songId) {
+      setError("Bạn cần chọn bài hát trước.");
+      return;
+    }
 
     try {
       setError("");
+      setMessage("");
+
       await apiRequest(`/playlists/${playlistId}/songs`, {
         method: "POST",
         body: { song_id: Number(songId) },
       });
+
       setMessage("Đã thêm bài hát vào playlist.");
-      await loadData();
+      setSelectedSongs((old) => ({ ...old, [playlistId]: "" }));
+      await loadData(false);
     } catch (err) {
       setError(err.message);
     }
@@ -76,11 +148,17 @@ export default function PlaylistsPage() {
   async function removeSong(playlistId, songId) {
     if (!window.confirm("Bạn có chắc muốn xóa bài hát này khỏi playlist?"))
       return;
+
     try {
+      setError("");
+      setMessage("");
+
       await apiRequest(`/playlists/${playlistId}/songs/${songId}`, {
         method: "DELETE",
       });
-      await loadData();
+
+      setMessage("Đã xóa bài hát khỏi playlist.");
+      await loadData(false);
     } catch (err) {
       setError(err.message);
     }
@@ -88,9 +166,21 @@ export default function PlaylistsPage() {
 
   async function deletePlaylist(playlistId) {
     if (!window.confirm("Bạn có chắc muốn xóa playlist này?")) return;
+
     try {
-      await apiRequest(`/playlists/${playlistId}`, { method: "DELETE" });
-      await loadData();
+      setError("");
+      setMessage("");
+
+      await apiRequest(`/playlists/${playlistId}`, {
+        method: "DELETE",
+      });
+
+      if (editingPlaylist?.playlist_id === playlistId) {
+        setEditingPlaylist(null);
+      }
+
+      setMessage("Đã xóa playlist.");
+      await loadData(false);
     } catch (err) {
       setError(err.message);
     }
@@ -111,12 +201,14 @@ export default function PlaylistsPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Tên playlist"
+            maxLength={255}
             required
           />
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Mô tả playlist"
+            maxLength={255}
           />
           <select
             value={visibility}
@@ -125,7 +217,9 @@ export default function PlaylistsPage() {
             <option value="private">Riêng tư</option>
             <option value="public">Công khai</option>
           </select>
-          <button className="primary-button">Tạo playlist</button>
+          <button className="primary-button" disabled={saving}>
+            {saving ? "Đang tạo..." : "Tạo playlist"}
+          </button>
         </div>
       </form>
 
@@ -138,10 +232,14 @@ export default function PlaylistsPage() {
         <div className="playlist-list">
           {playlists.map((playlist) => {
             const isOwner = playlist.Useruser_id === user?.user_id;
+            const isEditing =
+              editingPlaylist?.playlist_id === playlist.playlist_id;
+
             return (
               <article className="playlist-card" key={playlist.playlist_id}>
                 <div className="playlist-card-heading">
                   <div className="playlist-cover">♫</div>
+
                   <div className="playlist-details">
                     <h3>{playlist.title}</h3>
                     <p>{playlist.description || "Chưa có mô tả"}</p>
@@ -152,29 +250,98 @@ export default function PlaylistsPage() {
                         : "Riêng tư"}
                     </span>
                   </div>
+
                   {isOwner && (
-                    <button
-                      className="danger-button"
-                      onClick={() => deletePlaylist(playlist.playlist_id)}
-                    >
-                      Xóa playlist
-                    </button>
+                    <div className="playlist-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          isEditing ? cancelEdit() : startEdit(playlist)
+                        }
+                      >
+                        {isEditing ? "Đóng chỉnh sửa" : "Chỉnh sửa"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => deletePlaylist(playlist.playlist_id)}
+                      >
+                        Xóa playlist
+                      </button>
+                    </div>
                   )}
                 </div>
+
+                {isEditing && (
+                  <form
+                    className="playlist-edit-form"
+                    onSubmit={updatePlaylist}
+                  >
+                    <h4>Chỉnh sửa playlist</h4>
+
+                    <div className="playlist-edit-grid">
+                      <input
+                        name="title"
+                        value={editingPlaylist.title}
+                        onChange={changeEditForm}
+                        placeholder="Tên playlist"
+                        maxLength={255}
+                        required
+                      />
+
+                      <input
+                        name="description"
+                        value={editingPlaylist.description}
+                        onChange={changeEditForm}
+                        placeholder="Mô tả playlist"
+                        maxLength={255}
+                      />
+
+                      <select
+                        name="visibility"
+                        value={editingPlaylist.visibility}
+                        onChange={changeEditForm}
+                      >
+                        <option value="private">Riêng tư</option>
+                        <option value="public">Công khai</option>
+                      </select>
+
+                      <div className="playlist-edit-actions">
+                        <button className="primary-button" disabled={saving}>
+                          {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={cancelEdit}
+                          disabled={saving}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
 
                 <div className="playlist-songs">
                   {(playlist.songs || []).length ? (
                     playlist.songs.map((item) => {
                       const song = item.song;
                       if (!song) return null;
+
                       return (
                         <div className="playlist-song-row" key={song.song_id}>
                           <div>
                             <strong>{song.title}</strong>
                             <span>{song.singer || "Chưa rõ nghệ sĩ"}</span>
                           </div>
+
                           {isOwner && (
                             <button
+                              type="button"
                               className="text-button danger-text"
                               onClick={() =>
                                 removeSong(playlist.playlist_id, song.song_id)
@@ -209,7 +376,9 @@ export default function PlaylistsPage() {
                         </option>
                       ))}
                     </select>
+
                     <button
+                      type="button"
                       className="secondary-button"
                       onClick={() => addSong(playlist.playlist_id)}
                     >
