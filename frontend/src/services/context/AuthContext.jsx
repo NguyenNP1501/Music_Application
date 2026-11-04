@@ -13,12 +13,16 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
+
       try {
         const data = await apiRequest("/auth/me");
         setUser(data.user);
-      } catch {
-        clearToken();
-        setUser(null);
+      } catch (error) {
+        // Chỉ xóa token khi API trả về 401.
+        // Lỗi 500 hoặc mất kết nối không được tự động đăng xuất.
+        if (!localStorage.getItem("music_token")) {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
