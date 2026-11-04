@@ -2,38 +2,60 @@ const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 
 async function requireAuth(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+
+  if (!token) {
+    return res.status(401).json({ message: "Bạn cần đăng nhập." });
+  }
+
+  let payload;
   try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-
-    if (!token) {
-      return res.status(401).json({ message: "Bạn cần đăng nhập." });
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    if (
+      error instanceof jwt.JsonWebTokenError ||
+      error instanceof jwt.TokenExpiredError ||
+      error instanceof jwt.NotBeforeError
+    ) {
+      return res.status(401).json({
+        message: "Token không hợp lệ hoặc đã hết hạn.",
+      });
     }
+    return next(error);
+  }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+  const userId = Number(payload?.user_id);
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    return res.status(401).json({ message: "Token không hợp lệ." });
+  }
+
+  try {
     const user = await prisma.user.findUnique({
-      where: { user_id: Number(payload.user_id) },
+      where: { user_id: userId },
       select: { user_id: true, role: true },
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Tài khoản không còn tồn tại." });
+      return res.status(401).json({
+        message: "Tài khoản không còn tồn tại.",
+      });
     }
 
     req.user = user;
-    next();
+    return next();
   } catch (error) {
-    return res
-      .status(401)
-      .json({ message: "Token không hợp lệ hoặc đã hết hạn." });
+    return next(error);
   }
 }
 
 function requireAdmin(req, res, next) {
   if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "Bạn không có quyền quản trị." });
+    return res.status(403).json({
+      message: "Bạn không có quyền quản trị.",
+    });
   }
-  next();
+  return next();
 }
 
 module.exports = { requireAuth, requireAdmin };
