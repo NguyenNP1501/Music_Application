@@ -1,0 +1,52 @@
+.home-hero {
+  min-height: 260px;
+  padding: 42px 48px;
+  margin-bottom: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  border-radius: 20px;
+  background: linear-gradient(115deg, #5c3bb5, #9a7be7);
+  color: #fff;
+}
+
+.home-hero .eyebrow {
+  color: #e4dcff;
+}
+
+.home-hero h1 {
+  max-width: 580px;
+  margin: 14px 0 10px;
+  font-size: clamp(25px, 3vw, 38px);
+}
+
+.home-hero p {
+  color: #eee8ff;
+  font-size: 13px;
+}
+
+.hero-decoration {
+  padding-right: 35px;
+  color: #ffffff30;
+  font-size: 150px;
+}
+
+.content-section {
+  margin-bottom: 35px;
+}
+
+.content-section > .page-heading {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 520px) {
+  .home-hero {
+    padding: 28px;
+  }
+
+  .hero-decoration {
+    display: none;
+  }
+}

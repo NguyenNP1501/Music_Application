@@ -1,0 +1,58 @@
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.artist-card {
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid #ece8f2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.artist-card strong {
+  color: #302941;
+  font-size: 13px;
+}
+
+.artist-card span {
+  color: #9992a4;
+  font-size: 11px;
+}
+
+.artist-avatar {
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 180px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eee8ff, #dcd0ff);
+  color: #7654d8;
+  font-size: 54px;
+  font-weight: 700;
+}
+
+@media (max-width: 1050px) {
+  .artist-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .artist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .artist-grid {
+    grid-template-columns: 1fr;
+  }
+}

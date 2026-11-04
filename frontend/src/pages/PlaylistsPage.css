@@ -1,0 +1,161 @@
+.playlist-create-form {
+  margin-bottom: 28px;
+  padding: 22px;
+  border: 1px solid #ece8f2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.playlist-create-form h3 {
+  margin: 0 0 15px;
+  color: #302941;
+  font-size: 14px;
+}
+
+.playlist-form-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.5fr 0.8fr auto;
+  gap: 10px;
+}
+
+.playlist-form-grid input,
+.playlist-form-grid select,
+.playlist-add-song select {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #e8e3ef;
+  border-radius: 9px;
+  outline: 0;
+  background: #fff;
+  color: #302941;
+  font-size: 12px;
+}
+
+.playlist-form-grid .primary-button {
+  margin: 0;
+}
+
+.playlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.playlist-card {
+  padding: 22px;
+  border: 1px solid #ece8f2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.playlist-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.playlist-cover {
+  width: 65px;
+  height: 65px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #eee8ff;
+  color: #7654d8;
+  font-size: 30px;
+}
+
+.playlist-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.playlist-details h3 {
+  margin: 0 0 5px;
+  color: #302941;
+  font-size: 15px;
+}
+
+.playlist-details p {
+  margin: 0 0 6px;
+  color: #817a90;
+  font-size: 12px;
+}
+
+.playlist-details span {
+  color: #a19aab;
+  font-size: 10px;
+}
+
+.playlist-songs {
+  margin-top: 17px;
+  border-top: 1px solid #f0edf4;
+}
+
+.playlist-song-row {
+  min-height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #f0edf4;
+}
+
+.playlist-song-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.playlist-song-row strong {
+  color: #40384e;
+  font-size: 12px;
+}
+
+.playlist-song-row span {
+  color: #9992a4;
+  font-size: 10px;
+}
+
+.danger-text {
+  color: #d34c61;
+}
+
+.playlist-add-song {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.playlist-add-song select {
+  flex: 1;
+}
+
+.playlist-add-song .secondary-button {
+  font-size: 11px;
+}
+
+@media (max-width: 1050px) {
+  .playlist-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .playlist-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .playlist-card-heading {
+    flex-wrap: wrap;
+  }
+
+  .playlist-card-heading .danger-button {
+    margin-left: auto;
+  }
+
+  .playlist-add-song {
+    flex-direction: column;
+  }
+}
