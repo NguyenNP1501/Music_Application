@@ -295,19 +295,6 @@ export default function AdminPage() {
     }
   }
 
-  async function deleteAlbum(album) {
-    if (!window.confirm(`Xóa album "${album.title}"?`)) return;
-
-    try {
-      setError("");
-      await apiRequest(`/albums/${album.album_id}`, { method: "DELETE" });
-      setMessage("Đã xóa album.");
-      await loadAlbums(keyword);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
   if (user?.role !== "admin") {
     return (
       <div className="admin-page">

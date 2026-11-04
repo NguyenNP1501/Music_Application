@@ -117,6 +117,12 @@ router.post("/songs", requireAuth, async (req, res, next) => {
     if (!album)
       return res.status(400).json({ message: "Album không tồn tại." });
 
+    if (!canManage(album, req.user.user_id, req.user.role)) {
+      return res.status(403).json({
+        message: "Bạn không có quyền thêm bài hát vào album này.",
+      });
+    }
+
     const song = await prisma.song.create({
       data: {
         title,
@@ -187,15 +193,26 @@ router.patch("/songs/:id", requireAuth, async (req, res, next) => {
 
     if (req.body.Albumalbum_id !== undefined) {
       const albumId = validId(req.body.Albumalbum_id);
-      if (
-        !albumId ||
-        !(await prisma.album.findUnique({ where: { album_id: albumId } }))
-      ) {
+      if (!albumId) {
         return res.status(400).json({ message: "Album không hợp lệ." });
       }
+
+      const album = await prisma.album.findUnique({
+        where: { album_id: albumId },
+      });
+
+      if (!album) {
+        return res.status(400).json({ message: "Album không tồn tại." });
+      }
+
+      if (!canManage(album, req.user.user_id, req.user.role)) {
+        return res.status(403).json({
+          message: "Bạn không có quyền sử dụng album này.",
+        });
+      }
+
       data.Albumalbum_id = albumId;
     }
-
     if (!Object.keys(data).length) {
       return res
         .status(400)
