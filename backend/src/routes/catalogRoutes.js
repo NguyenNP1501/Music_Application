@@ -37,32 +37,63 @@ const validUrl = (value, required = false) => {
 const canManage = (record, userId, role) =>
   record.Useruser_id === userId || role === "admin";
 
+const getPagination = (query) => {
+  const page = Number.parseInt(query.page, 10) || 1;
+  const limit = Number.parseInt(query.limit, 10) || 12;
+
+  if (page < 1 || limit < 1 || limit > 100) return null;
+
+  return { page, limit, skip: (page - 1) * limit };
+};
+
 // ================= SONGS =================
 
 // Danh sách bài hát và tìm kiếm
 router.get("/songs", async (req, res, next) => {
   try {
     const q = String(req.query.q || "").trim();
+    const pagination = getPagination(req.query);
 
-    const songs = await prisma.song.findMany({
-      where: q
-        ? {
-            OR: [
-              { title: { contains: q } },
-              { singer: { contains: q } },
-              { composer: { contains: q } },
-              { genre: { contains: q } },
-            ],
-          }
-        : {},
-      include: {
-        album: true,
-        user: { select: { user_id: true, full_name: true } },
+    if (!pagination) {
+      return res
+        .status(400)
+        .json({ message: "Thông tin phân trang không hợp lệ." });
+    }
+
+    const where = q
+      ? {
+          OR: [
+            { title: { contains: q } },
+            { singer: { contains: q } },
+            { composer: { contains: q } },
+            { genre: { contains: q } },
+          ],
+        }
+      : {};
+
+    const [songs, total] = await prisma.$transaction([
+      prisma.song.findMany({
+        where,
+        include: {
+          album: true,
+          user: { select: { user_id: true, full_name: true } },
+        },
+        orderBy: { song_id: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+      prisma.song.count({ where }),
+    ]);
+
+    res.json({
+      songs,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
       },
-      orderBy: { song_id: "desc" },
     });
-
-    res.json({ songs });
   } catch (error) {
     next(error);
   }
@@ -254,17 +285,39 @@ router.delete("/songs/:id", requireAuth, async (req, res, next) => {
 router.get("/albums", async (req, res, next) => {
   try {
     const q = String(req.query.q || "").trim();
+    const pagination = getPagination(req.query);
 
-    const albums = await prisma.album.findMany({
-      where: q ? { title: { contains: q } } : {},
-      include: {
-        user: { select: { user_id: true, full_name: true } },
-        songs: true,
+    if (!pagination) {
+      return res
+        .status(400)
+        .json({ message: "Thông tin phân trang không hợp lệ." });
+    }
+
+    const where = q ? { title: { contains: q } } : {};
+
+    const [albums, total] = await prisma.$transaction([
+      prisma.album.findMany({
+        where,
+        include: {
+          user: { select: { user_id: true, full_name: true } },
+          songs: true,
+        },
+        orderBy: { album_id: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+      prisma.album.count({ where }),
+    ]);
+
+    res.json({
+      albums,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
       },
-      orderBy: { album_id: "desc" },
     });
-
-    res.json({ albums });
   } catch (error) {
     next(error);
   }

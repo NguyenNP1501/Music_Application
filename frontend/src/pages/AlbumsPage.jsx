@@ -2,31 +2,32 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
+import Pagination from "../components/common/Pagination";
 
 export default function AlbumsPage() {
   const [albums, setAlbums] = useState([]);
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function loadAlbums(q = "") {
+  async function loadAlbums(q = keyword, p = page) {
     try {
       setLoading(true);
       setError("");
       const data = await apiRequest(
-        `/albums${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+        `/albums?page=${p}&limit=12&q=${encodeURIComponent(q)}`,
       );
       setAlbums(data.albums || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setPage(p);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    loadAlbums();
-  }, []);
 
   return (
     <>
@@ -74,6 +75,14 @@ export default function AlbumsPage() {
         </div>
       ) : (
         <EmptyState>Không tìm thấy album.</EmptyState>
+      )}
+
+      {!loading && albums.length > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={(nextPage) => loadAlbums(keyword, nextPage)}
+        />
       )}
     </>
   );

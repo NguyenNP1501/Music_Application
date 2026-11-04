@@ -3,10 +3,13 @@ import { apiRequest } from "../services/api";
 import PageTitle from "../components/common/PageTitles";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
+import Pagination from "../components/common/Pagination";
 
 export default function SongsPage() {
   const [songs, setSongs] = useState([]);
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -40,6 +43,23 @@ export default function SongsPage() {
     loadSongs(keyword);
   }
 
+  async function loadSongs(q = keyword, p = page) {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await apiRequest(
+        `/songs?page=${p}&limit=12&q=${encodeURIComponent(q)}`,
+      );
+      setSongs(data.songs || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setPage(p);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <PageTitle
@@ -66,6 +86,14 @@ export default function SongsPage() {
         </div>
       ) : (
         <EmptyState>Không tìm thấy bài hát phù hợp.</EmptyState>
+      )}
+
+      {!loading && songs.length > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={(nextPage) => loadSongs(keyword, nextPage)}
+        />
       )}
     </>
   );
