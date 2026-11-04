@@ -1,5 +1,4 @@
 const router = require("express").Router();
-const bcrypt = require("bcryptjs");
 const prisma = require("../config/prisma");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 const {
@@ -35,7 +34,6 @@ router.patch("/me", requireAuth, async (req, res, next) => {
       "nickname",
       "avatar_url",
       "dateOfBirth",
-      "password",
     ]);
 
     if (Object.keys(req.body).some((key) => !allowed.has(key))) {
@@ -75,12 +73,10 @@ router.patch("/me", requireAuth, async (req, res, next) => {
     if (req.body.avatar_url !== undefined) {
       const value = normalizeAvatarUrl(req.body.avatar_url);
       if (!value.valid) {
-        return res
-          .status(400)
-          .json({
-            message:
-              "Đường dẫn ảnh đại diện phải là URL HTTP/HTTPS hợp lệ và không quá 255 ký tự.",
-          });
+        return res.status(400).json({
+          message:
+            "Đường dẫn ảnh đại diện phải là URL HTTP/HTTPS hợp lệ và không quá 255 ký tự.",
+        });
       }
       data.avatar_url = value.value;
     }
@@ -88,24 +84,11 @@ router.patch("/me", requireAuth, async (req, res, next) => {
     if (req.body.dateOfBirth !== undefined) {
       const value = parseBirthDate(req.body.dateOfBirth);
       if (!value.valid) {
-        return res
-          .status(400)
-          .json({
-            message: "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
-          });
+        return res.status(400).json({
+          message: "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
+        });
       }
       data.dateOfBirth = value.value;
-    }
-
-    if (req.body.password !== undefined) {
-      if (!validatePassword(req.body.password)) {
-        return res
-          .status(400)
-          .json({
-            message: "Mật khẩu phải có ít nhất 8 ký tự và tối đa 72 byte.",
-          });
-      }
-      data.password = await bcrypt.hash(req.body.password, 12);
     }
 
     const user = await prisma.user.update({

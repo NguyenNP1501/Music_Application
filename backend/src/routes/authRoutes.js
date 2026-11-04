@@ -1,8 +1,10 @@
 const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const prisma = require("../config/prisma");
 const { requireAuth } = require("../middleware/auth");
+const { sendPasswordResetEmail } = require("../utils/mailer");
 const {
   isObject,
   normalizeEmail,
@@ -27,6 +29,9 @@ const createToken = (user) =>
     expiresIn: "7d",
   });
 
+const passwordFingerprint = (passwordHash) =>
+  crypto.createHash("sha256").update(passwordHash).digest("hex");
+
 router.post("/register", async (req, res, next) => {
   try {
     if (!isObject(req.body)) {
@@ -47,7 +52,7 @@ router.post("/register", async (req, res, next) => {
     ) {
       return res.status(400).json({
         message:
-          "Thông tin đăng ký không hợp lệ. Họ tên và email là bắt buộc; mật khẩu phải từ 8 đến 72 byte; ngày sinh và tên hiển thị phải đúng định dạng.",
+          "Thông tin đăng ký không hợp lệ. Mật khẩu phải từ 8 đến 72 byte.",
       });
     }
 
@@ -73,9 +78,9 @@ router.post("/register", async (req, res, next) => {
 router.post("/login", async (req, res, next) => {
   try {
     if (!isObject(req.body)) {
-      return res
-        .status(400)
-        .json({ message: "Thông tin đăng nhập không hợp lệ." });
+      return res.status(400).json({
+        message: "Thông tin đăng nhập không hợp lệ.",
+      });
     }
 
     const email = normalizeEmail(req.body.email);
@@ -83,17 +88,17 @@ router.post("/login", async (req, res, next) => {
       typeof req.body.password === "string" ? req.body.password : "";
 
     if (!email || !password || Buffer.byteLength(password, "utf8") > 72) {
-      return res
-        .status(400)
-        .json({ message: "Email hoặc mật khẩu không hợp lệ." });
+      return res.status(400).json({
+        message: "Email hoặc mật khẩu không hợp lệ.",
+      });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res
-        .status(401)
-        .json({ message: "Email hoặc mật khẩu không chính xác." });
+      return res.status(401).json({
+        message: "Email hoặc mật khẩu không chính xác.",
+      });
     }
 
     const safeUser = {
@@ -125,6 +130,167 @@ router.get("/me", requireAuth, async (req, res, next) => {
     }
 
     return res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Đổi mật khẩu khi đã đăng nhập
+router.post("/password/change", requireAuth, async (req, res, next) => {
+  try {
+    if (!isObject(req.body)) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ." });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (
+      typeof currentPassword !== "string" ||
+      !currentPassword ||
+      !validatePassword(newPassword) ||
+      newPassword !== confirmPassword
+    ) {
+      return res.status(400).json({
+        message: "Vui lòng kiểm tra mật khẩu hiện tại và mật khẩu mới.",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "Mật khẩu mới phải khác mật khẩu hiện tại.",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { user_id: req.user.user_id },
+    });
+
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(400).json({
+        message: "Mật khẩu hiện tại không chính xác.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { user_id: user.user_id },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({ message: "Đổi mật khẩu thành công." });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Yêu cầu đặt lại mật khẩu
+router.post("/password/forgot", async (req, res, next) => {
+  try {
+    if (!isObject(req.body)) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ." });
+    }
+
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+      return res.status(400).json({ message: "Email không hợp lệ." });
+    }
+
+    const genericMessage =
+      "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.";
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Không tiết lộ email có đăng ký tài khoản hay không
+    if (!user) {
+      return res.json({ message: genericMessage });
+    }
+
+    const resetToken = jwt.sign(
+      {
+        user_id: user.user_id,
+        purpose: "password-reset",
+        passwordFingerprint: passwordFingerprint(user.password),
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" },
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
+
+    await sendPasswordResetEmail(user.email, resetUrl);
+
+    return res.json({ message: genericMessage });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Đặt lại mật khẩu bằng token trong email
+router.post("/password/reset", async (req, res, next) => {
+  try {
+    if (!isObject(req.body)) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ." });
+    }
+
+    const { resetToken, newPassword, confirmPassword } = req.body;
+
+    if (
+      typeof resetToken !== "string" ||
+      !resetToken ||
+      !validatePassword(newPassword) ||
+      newPassword !== confirmPassword
+    ) {
+      return res.status(400).json({
+        message: "Token hoặc thông tin mật khẩu không hợp lệ.",
+      });
+    }
+
+    let payload;
+
+    try {
+      payload = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch {
+      return res.status(400).json({
+        message: "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
+      });
+    }
+
+    if (
+      payload.purpose !== "password-reset" ||
+      !Number.isSafeInteger(payload.user_id) ||
+      typeof payload.passwordFingerprint !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Token đặt lại mật khẩu không hợp lệ.",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { user_id: payload.user_id },
+    });
+
+    if (
+      !user ||
+      passwordFingerprint(user.password) !== payload.passwordFingerprint
+    ) {
+      return res.status(400).json({
+        message: "Liên kết đặt lại mật khẩu không còn hiệu lực.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { user_id: user.user_id },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({
+      message: "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập.",
+    });
   } catch (error) {
     next(error);
   }

@@ -252,3 +252,14 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+.auth-success {
+  margin-bottom: 16px;
+  padding: 11px 13px;
+  border: 1px solid #d5eddd;
+  border-radius: 8px;
+  background: #f0faf3;
+  color: #27834b;
+  font-size: 11px;
+  line-height: 1.6;
+}

@@ -11,8 +11,15 @@ export default function ProfilePage() {
     nickname: "",
     avatar_url: "",
     dateOfBirth: "",
-    password: "",
   });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
   const [stats, setStats] = useState({
     playlists: 0,
     following: 0,
@@ -59,7 +66,6 @@ export default function ProfilePage() {
     setLoading(true);
 
     const payload = { ...form };
-    if (!payload.password) delete payload.password;
     if (!payload.dateOfBirth) delete payload.dateOfBirth;
 
     try {
@@ -70,6 +76,39 @@ export default function ProfilePage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function changePassword(e) {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+      return;
+    }
+    setPasswordSaving(true);
+
+    try {
+      const data = await apiRequest("/auth/password/change", {
+        method: "POST",
+        body: passwordForm,
+      });
+
+      setPasswordMessage(data.message);
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setPasswordError(err.message);
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -157,18 +196,6 @@ export default function ProfilePage() {
               placeholder="https://..."
             />
           </label>
-
-          <label className="profile-full">
-            Mật khẩu mới
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={change}
-              placeholder="Để trống nếu không đổi mật khẩu"
-              minLength={8}
-            />
-          </label>
         </div>
 
         <div className="profile-form-actions">
@@ -177,6 +204,73 @@ export default function ProfilePage() {
           </button>
           <button type="button" className="secondary-button" onClick={logout}>
             Đăng xuất
+          </button>
+        </div>
+      </form>
+
+      <form className="profile-form" onSubmit={changePassword}>
+        <h3>Đổi mật khẩu</h3>
+
+        {passwordError && <p className="error-message">{passwordError}</p>}
+        {passwordMessage && (
+          <p className="success-message">{passwordMessage}</p>
+        )}
+
+        <div className="profile-form-grid">
+          <label className="profile-full">
+            Mật khẩu hiện tại
+            <input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  currentPassword: e.target.value,
+                })
+              }
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          <label>
+            Mật khẩu mới
+            <input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  newPassword: e.target.value,
+                })
+              }
+              minLength={8}
+              autoComplete="new-password"
+              required
+            />
+          </label>
+
+          <label>
+            Xác nhận mật khẩu mới
+            <input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  confirmPassword: e.target.value,
+                })
+              }
+              minLength={8}
+              autoComplete="new-password"
+              required
+            />
+          </label>
+        </div>
+
+        <div className="profile-form-actions">
+          <button className="primary-button" disabled={passwordSaving}>
+            {passwordSaving ? "Đang cập nhật..." : "Đổi mật khẩu"}
           </button>
         </div>
       </form>

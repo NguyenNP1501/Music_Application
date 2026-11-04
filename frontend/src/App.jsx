@@ -16,6 +16,11 @@ export default function App() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState("home");
 
+  const hasResetToken = new URLSearchParams(window.location.search).has(
+    "resetToken",
+  );
+
+  if (hasResetToken) return <AuthPage />;
   if (loading) return <div className="loading-screen">Đang tải...</div>;
   if (!user) return <AuthPage />;
 
