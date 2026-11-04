@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const prisma = require("../config/prisma");
 const { requireAuth } = require("../middleware/auth");
-
+const { getPagination } = require("../utils/catalogValidation");
 const validId = (value) => {
   const n = Number(value);
   return Number.isSafeInteger(n) && n > 0 ? n : null;
@@ -460,18 +460,31 @@ router.delete("/albums/:id", requireAuth, async (req, res, next) => {
 
 router.get("/artists", async (req, res, next) => {
   try {
-    const q = String(req.query.q || "").trim();
+    if (req.query.q !== undefined && typeof req.query.q !== "string") {
+      return res.status(400).json({
+        message: "Từ khóa tìm kiếm không hợp lệ.",
+      });
+    }
+
+    const q = (req.query.q || "").trim();
+
+    if (q.length > 255) {
+      return res.status(400).json({
+        message: "Từ khóa tìm kiếm quá dài.",
+      });
+    }
+
     const pagination = getPagination(req.query);
 
     if (!pagination) {
-      return res
-        .status(400)
-        .json({ message: "Thông tin phân trang không hợp lệ." });
+      return res.status(400).json({
+        message: "Thông tin phân trang không hợp lệ.",
+      });
     }
 
     const where = q ? { singer: { contains: q } } : {};
 
-    const [artists, total] = await prisma.$transaction([
+    const [artists, countRows] = await prisma.$transaction([
       prisma.song.groupBy({
         by: ["singer"],
         where,
@@ -480,14 +493,19 @@ router.get("/artists", async (req, res, next) => {
         skip: pagination.skip,
         take: pagination.limit,
       }),
-      prisma.song
-        .findMany({
-          where,
-          select: { singer: true },
-          distinct: ["singer"],
-        })
-        .then((rows) => rows.length),
+      q
+        ? prisma.$queryRaw`
+            SELECT COUNT(DISTINCT singer) AS total
+            FROM Song
+            WHERE singer LIKE ${`%${q}%`}
+          `
+        : prisma.$queryRaw`
+            SELECT COUNT(DISTINCT singer) AS total
+            FROM Song
+          `,
     ]);
+
+    const total = Number(countRows[0]?.total || 0);
 
     res.json({
       artists: artists.map((item) => ({

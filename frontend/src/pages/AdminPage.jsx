@@ -83,8 +83,31 @@ export default function AdminPage() {
   }
 
   async function loadAllAlbums() {
-    const data = await apiRequest("/albums?limit=100");
-    setAllAlbums(data.albums || []);
+    const first = await apiRequest("/albums?page=1&limit=100");
+    const rows = [...(first.albums || [])];
+    const totalPages = first.pagination?.totalPages || 1;
+
+    for (let page = 2; page <= totalPages; page++) {
+      const data = await apiRequest(`/albums?page=${page}&limit=100`);
+      rows.push(...(data.albums || []));
+    }
+
+    setAllAlbums(rows);
+  }
+
+  async function reloadSongsAfterDelete() {
+    const nextPage =
+      songs.length === 1 && songPage > 1 ? songPage - 1 : songPage;
+
+    await loadSongs(keyword, nextPage);
+  }
+
+  async function reloadAlbumsAfterDelete() {
+    const nextPage =
+      albums.length === 1 && albumPage > 1 ? albumPage - 1 : albumPage;
+
+    await loadAlbums(keyword, nextPage);
+    await loadAllAlbums();
   }
 
   async function loadCurrentTab(q = keyword) {
@@ -124,6 +147,24 @@ export default function AdminPage() {
     }
     loadDashboard();
   }, []);
+
+  async function changeTab(nextTab) {
+    setTab(nextTab);
+    setKeyword("");
+    setError("");
+    setMessage("");
+    setLoading(true);
+
+    try {
+      if (nextTab === "users") await loadUsers("");
+      if (nextTab === "songs") await loadSongs("", 1);
+      if (nextTab === "albums") await loadAlbums("", 1);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function search(e) {
     e.preventDefault();
@@ -249,7 +290,7 @@ export default function AdminPage() {
       setMessage("");
       await apiRequest(`/songs/${song.song_id}`, { method: "DELETE" });
       setMessage("Đã xóa bài hát.");
-      await loadSongs(keyword, 1);
+      await reloadSongsAfterDelete();
     } catch (err) {
       setError(err.message);
     }
@@ -274,7 +315,7 @@ export default function AdminPage() {
       setMessage("");
       await apiRequest(`/albums/${album.album_id}`, { method: "DELETE" });
       setMessage("Đã xóa album.");
-      await loadAlbums(keyword);
+      await reloadAlbumsAfterDelete();
     } catch (err) {
       setError(err.message);
     }
@@ -295,7 +336,8 @@ export default function AdminPage() {
       setAlbumForm(emptyAlbum);
       setShowAlbumForm(false);
       setMessage("Đã thêm album.");
-      await loadAlbums(keyword);
+      await loadAlbums(keyword, 1);
+      await loadAllAlbums();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -334,7 +376,8 @@ export default function AdminPage() {
       setEditingAlbumId(null);
       setShowAlbumForm(false);
       setMessage("Đã cập nhật album.");
-      await loadAlbums(keyword);
+      await loadAlbums(keyword, albumPage);
+      await loadAllAlbums();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -380,12 +423,7 @@ export default function AdminPage() {
             <button
               key={item.id}
               className={tab === item.id ? "active" : ""}
-              onClick={() => {
-                setTab(item.id);
-                setKeyword("");
-                setError("");
-                setMessage("");
-              }}
+              onClick={() => changeTab(item.id)}
             >
               {item.label}
             </button>
