@@ -2,6 +2,13 @@ const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const prisma = require("../config/prisma");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
+const {
+  isObject,
+  validatePassword,
+  normalizeText,
+  normalizeAvatarUrl,
+  parseBirthDate,
+} = require("../utils/accountValidation");
 
 async function runSerializable(task, retries = 3) {
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -10,32 +17,93 @@ async function runSerializable(task, retries = 3) {
         isolationLevel: "Serializable",
       });
     } catch (error) {
-      if (error.code !== "P2034" || attempt === retries - 1) {
-        throw error;
-      }
+      if (error.code !== "P2034" || attempt === retries - 1) throw error;
     }
   }
 }
 
 router.patch("/me", requireAuth, async (req, res, next) => {
   try {
+    if (!isObject(req.body)) {
+      return res
+        .status(400)
+        .json({ message: "Dữ liệu cập nhật không hợp lệ." });
+    }
+
+    const allowed = new Set([
+      "full_name",
+      "nickname",
+      "avatar_url",
+      "dateOfBirth",
+      "password",
+    ]);
+
+    if (Object.keys(req.body).some((key) => !allowed.has(key))) {
+      return res
+        .status(400)
+        .json({ message: "Có trường thông tin không được phép cập nhật." });
+    }
+
+    if (!Object.keys(req.body).length) {
+      return res
+        .status(400)
+        .json({ message: "Không có thông tin cần cập nhật." });
+    }
+
     const data = {};
 
-    for (const key of ["full_name", "nickname", "avatar_url"]) {
-      if (req.body[key] !== undefined) data[key] = req.body[key];
+    if (req.body.full_name !== undefined) {
+      const value = normalizeText(req.body.full_name, { required: true });
+      if (!value.valid) {
+        return res
+          .status(400)
+          .json({ message: "Họ và tên phải có từ 1 đến 255 ký tự." });
+      }
+      data.full_name = value.value;
+    }
+
+    if (req.body.nickname !== undefined) {
+      const value = normalizeText(req.body.nickname, { nullable: true });
+      if (!value.valid) {
+        return res
+          .status(400)
+          .json({ message: "Tên hiển thị không hợp lệ (tối đa 255 ký tự)." });
+      }
+      data.nickname = value.value;
+    }
+
+    if (req.body.avatar_url !== undefined) {
+      const value = normalizeAvatarUrl(req.body.avatar_url);
+      if (!value.valid) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "Đường dẫn ảnh đại diện phải là URL HTTP/HTTPS hợp lệ và không quá 255 ký tự.",
+          });
+      }
+      data.avatar_url = value.value;
     }
 
     if (req.body.dateOfBirth !== undefined) {
-      const date = new Date(req.body.dateOfBirth);
-      if (Number.isNaN(date.getTime())) {
-        return res.status(400).json({ message: "Ngày sinh không hợp lệ." });
+      const value = parseBirthDate(req.body.dateOfBirth);
+      if (!value.valid) {
+        return res
+          .status(400)
+          .json({
+            message: "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
+          });
       }
-      data.dateOfBirth = date;
+      data.dateOfBirth = value.value;
     }
 
-    if (req.body.password) {
-      if (req.body.password.length < 8) {
-        return res.status(400).json({ message: "Mật khẩu tối thiểu 8 ký tự." });
+    if (req.body.password !== undefined) {
+      if (!validatePassword(req.body.password)) {
+        return res
+          .status(400)
+          .json({
+            message: "Mật khẩu phải có ít nhất 8 ký tự và tối đa 72 byte.",
+          });
       }
       data.password = await bcrypt.hash(req.body.password, 12);
     }
@@ -55,20 +123,29 @@ router.patch("/me", requireAuth, async (req, res, next) => {
       },
     });
 
-    res.json({ user });
+    return res.json({ user });
   } catch (error) {
     next(error);
   }
 });
 
-// Danh sách tài khoản, tìm kiếm theo tên/email
 router.get(
   "/admin/users",
   requireAuth,
   requireAdmin,
   async (req, res, next) => {
     try {
-      const q = String(req.query.q || "").trim();
+      if (req.query.q !== undefined && typeof req.query.q !== "string") {
+        return res
+          .status(400)
+          .json({ message: "Từ khóa tìm kiếm không hợp lệ." });
+      }
+
+      const q = (req.query.q || "").trim();
+
+      if (q.length > 255) {
+        return res.status(400).json({ message: "Từ khóa tìm kiếm quá dài." });
+      }
 
       const users = await prisma.user.findMany({
         where: q
@@ -87,14 +164,13 @@ router.get(
         take: 200,
       });
 
-      res.json({ users });
+      return res.json({ users });
     } catch (error) {
       next(error);
     }
   },
 );
 
-// Thay đổi vai trò
 router.patch(
   "/admin/users/:id/role",
   requireAuth,
@@ -102,7 +178,7 @@ router.patch(
   async (req, res, next) => {
     try {
       const userId = Number(req.params.id);
-      const { role } = req.body;
+      const role = req.body?.role;
 
       if (
         !Number.isInteger(userId) ||
@@ -121,45 +197,35 @@ router.patch(
       }
 
       const result = await runSerializable(async (tx) => {
-        const target = await tx.user.findUnique({
-          where: { user_id: userId },
-        });
+        const target = await tx.user.findUnique({ where: { user_id: userId } });
 
         if (!target) {
           return { status: 404, message: "Không tìm thấy tài khoản." };
         }
 
-        if (target.role === "admin" && role === "user") {
-          const count = await tx.user.count({
-            where: { role: "admin" },
-          });
-
-          if (count <= 1) {
-            return {
-              status: 409,
-              message: "Không thể hạ quyền admin cuối cùng.",
-            };
-          }
+        if (
+          target.role === "admin" &&
+          role === "user" &&
+          (await tx.user.count({ where: { role: "admin" } })) <= 1
+        ) {
+          return {
+            status: 409,
+            message: "Không thể hạ quyền admin cuối cùng.",
+          };
         }
 
-        await tx.user.update({
-          where: { user_id: userId },
-          data: { role },
-        });
+        await tx.user.update({ where: { user_id: userId }, data: { role } });
 
         return { status: 200, message: "Đã cập nhật vai trò tài khoản." };
       });
 
-      return res.status(result.status).json({
-        message: result.message,
-      });
+      return res.status(result.status).json({ message: result.message });
     } catch (error) {
       next(error);
     }
   },
 );
 
-// Xóa tài khoản
 router.delete(
   "/admin/users/:id",
   requireAuth,
@@ -179,37 +245,25 @@ router.delete(
       }
 
       const result = await runSerializable(async (tx) => {
-        const target = await tx.user.findUnique({
-          where: { user_id: userId },
-        });
+        const target = await tx.user.findUnique({ where: { user_id: userId } });
 
         if (!target) {
           return { status: 404, message: "Không tìm thấy tài khoản." };
         }
 
-        if (target.role === "admin") {
-          const count = await tx.user.count({
-            where: { role: "admin" },
-          });
-
-          if (count <= 1) {
-            return {
-              status: 409,
-              message: "Không thể xóa admin cuối cùng.",
-            };
-          }
+        if (
+          target.role === "admin" &&
+          (await tx.user.count({ where: { role: "admin" } })) <= 1
+        ) {
+          return { status: 409, message: "Không thể xóa admin cuối cùng." };
         }
 
-        await tx.user.delete({
-          where: { user_id: userId },
-        });
+        await tx.user.delete({ where: { user_id: userId } });
 
         return { status: 200, message: "Đã xóa tài khoản." };
       });
 
-      return res.status(result.status).json({
-        message: result.message,
-      });
+      return res.status(result.status).json({ message: result.message });
     } catch (error) {
       next(error);
     }
