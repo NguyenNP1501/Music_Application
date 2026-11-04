@@ -1,0 +1,158 @@
+.profile-page {
+  width: 100%;
+}
+
+.profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 26px;
+  border: 1px solid #ece8f2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #7654d8;
+  color: #fff;
+  font-size: 38px;
+  font-weight: 700;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-summary-info h2 {
+  margin: 0 0 7px;
+  color: #302941;
+  font-size: 20px;
+}
+
+.profile-summary-info p {
+  margin: 0 0 9px;
+  color: #9992a4;
+  font-size: 12px;
+}
+
+.profile-summary-info span {
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #f1edff;
+  color: #7654d8;
+  font-size: 10px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.profile-stats div {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid #ece8f2;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.profile-stats strong {
+  color: #7654d8;
+  font-size: 24px;
+}
+
+.profile-stats span {
+  color: #9992a4;
+  font-size: 11px;
+}
+
+.profile-form {
+  padding: 25px;
+  border: 1px solid #ece8f2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.profile-form h3 {
+  margin: 0 0 22px;
+  color: #302941;
+  font-size: 15px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.profile-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #514a60;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-form-grid input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e6e1ed;
+  border-radius: 9px;
+  outline: none;
+  color: #302941;
+  font-size: 12px;
+}
+
+.profile-form-grid input:focus {
+  border-color: #8765e2;
+}
+
+.profile-form-grid input:disabled {
+  background: #f5f3f8;
+  color: #91899f;
+}
+
+.profile-full {
+  grid-column: 1 / -1;
+}
+
+.profile-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.profile-form-actions .primary-button {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .profile-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-form-grid,
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-full {
+    grid-column: auto;
+  }
+}
