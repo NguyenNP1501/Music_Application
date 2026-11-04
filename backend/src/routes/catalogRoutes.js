@@ -37,15 +37,6 @@ const validUrl = (value, required = false) => {
 const canManage = (record, userId, role) =>
   record.Useruser_id === userId || role === "admin";
 
-const getPagination = (query) => {
-  const page = Number.parseInt(query.page, 10) || 1;
-  const limit = Number.parseInt(query.limit, 10) || 12;
-
-  if (page < 1 || limit < 1 || limit > 100) return null;
-
-  return { page, limit, skip: (page - 1) * limit };
-};
-
 // ================= SONGS =================
 
 // Danh sách bài hát và tìm kiếm
