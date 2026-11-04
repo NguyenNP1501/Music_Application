@@ -1,51 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
+import Pagination from "../components/common/Pagination";
 
 export default function ArtistsPage() {
-  const [songs, setSongs] = useState([]);
+  const [artists, setArtists] = useState([]);
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    apiRequest("/songs")
-      .then((data) => setSongs(data.songs || []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  async function loadArtists(q = keyword, p = 1) {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await apiRequest(
+        `/artists?page=${p}&limit=12&q=${encodeURIComponent(q)}`,
+      );
+      setArtists(data.artists || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setPage(p);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const artists = useMemo(() => {
-    const map = new Map();
-    songs.forEach((song) => {
-      const name = song.singer?.trim();
-      if (!name) return;
-      if (!map.has(name)) map.set(name, []);
-      map.get(name).push(song);
-    });
-    return [...map.entries()]
-      .map(([name, items]) => ({ name, songs: items }))
-      .filter((artist) =>
-        artist.name.toLowerCase().includes(keyword.toLowerCase()),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name, "vi"));
-  }, [songs, keyword]);
+  useEffect(() => {
+    loadArtists("", 1);
+  }, []);
 
   return (
     <>
       <PageTitle
         eyebrow="ARTISTS"
         title="Nghệ sĩ"
-        description="Danh sách nghệ sĩ được tổng hợp từ dữ liệu bài hát."
+        description="Danh sách nghệ sĩ trong hệ thống."
       />
-      <div className="page-search">
+      <form
+        className="page-search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          loadArtists(keyword, 1);
+        }}
+      >
         <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="Tìm nghệ sĩ..."
         />
-      </div>
+        <button className="primary-button">Tìm kiếm</button>
+      </form>
       {error && <p className="error-message">{error}</p>}
       {loading ? (
         <div className="loading">Đang tải nghệ sĩ...</div>
@@ -57,12 +65,19 @@ export default function ArtistsPage() {
                 {artist.name.charAt(0).toUpperCase()}
               </div>
               <strong>{artist.name}</strong>
-              <span>{artist.songs.length} bài hát</span>
+              <span>{artist.songCount} bài hát</span>
             </article>
           ))}
         </div>
       ) : (
         <EmptyState>Chưa có dữ liệu nghệ sĩ.</EmptyState>
+      )}
+      {!loading && artists.length > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={(nextPage) => loadArtists(keyword, nextPage)}
+        />
       )}
     </>
   );

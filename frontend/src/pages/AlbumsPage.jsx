@@ -12,7 +12,7 @@ export default function AlbumsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function loadAlbums(q = keyword, p = page) {
+  async function loadAlbums(q = keyword, p = 1) {
     try {
       setLoading(true);
       setError("");
@@ -29,6 +29,10 @@ export default function AlbumsPage() {
     }
   }
 
+  useEffect(() => {
+    loadAlbums("", 1);
+  }, []);
+
   return (
     <>
       <PageTitle
@@ -40,7 +44,7 @@ export default function AlbumsPage() {
         className="page-search"
         onSubmit={(e) => {
           e.preventDefault();
-          loadAlbums(keyword);
+          loadAlbums(keyword, 1);
         }}
       >
         <input
@@ -76,7 +80,6 @@ export default function AlbumsPage() {
       ) : (
         <EmptyState>Không tìm thấy album.</EmptyState>
       )}
-
       {!loading && albums.length > 0 && (
         <Pagination
           page={page}

@@ -455,4 +455,55 @@ router.delete("/albums/:id", requireAuth, async (req, res, next) => {
     next(error);
   }
 });
+
+// ============= ARTISTS ============
+
+router.get("/artists", async (req, res, next) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const pagination = getPagination(req.query);
+
+    if (!pagination) {
+      return res
+        .status(400)
+        .json({ message: "Thông tin phân trang không hợp lệ." });
+    }
+
+    const where = q ? { singer: { contains: q } } : {};
+
+    const [artists, total] = await prisma.$transaction([
+      prisma.song.groupBy({
+        by: ["singer"],
+        where,
+        _count: { _all: true },
+        orderBy: { singer: "asc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+      prisma.song
+        .findMany({
+          where,
+          select: { singer: true },
+          distinct: ["singer"],
+        })
+        .then((rows) => rows.length),
+    ]);
+
+    res.json({
+      artists: artists.map((item) => ({
+        name: item.singer,
+        songCount: item._count._all,
+      })),
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
