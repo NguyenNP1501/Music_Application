@@ -10,6 +10,8 @@ const playlistRoutes = require("./routes/playlistRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const socialRoutes = require("./routes/socialRoutes");
 
+const path = require("path");
+
 const app = express();
 
 app.use(
@@ -38,6 +40,7 @@ app.get("/api/health", async (req, res, next) => {
   }
 });
 
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api", catalogRoutes);

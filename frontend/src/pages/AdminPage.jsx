@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [albumForm, setAlbumForm] = useState(emptyAlbum);
   const [editingSongId, setEditingSongId] = useState(null);
   const [editingAlbumId, setEditingAlbumId] = useState(null);
+  const [songFile, setSongFile] = useState(null);
   const [showSongForm, setShowSongForm] = useState(false);
   const [showAlbumForm, setShowAlbumForm] = useState(false);
   const [songPage, setSongPage] = useState(1);
@@ -208,21 +209,31 @@ export default function AdminPage() {
 
   async function createSong(e) {
     e.preventDefault();
+    if (!songFile) {
+      setError("Vui lòng chọn file MP3.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setMessage("");
 
     try {
-      await apiRequest("/songs", {
-        method: "POST",
-        body: {
-          ...songForm,
-          Albumalbum_id: Number(songForm.Albumalbum_id),
-        },
+      const formData = new FormData();
+      Object.entries(songForm).forEach(([key, value]) => {
+        if (key !== "audio_url") formData.append(key, value);
       });
+      formData.append("audio", songFile);
+
+      await apiRequest("/songs/upload", {
+        method: "POST",
+        body: formData,
+      });
+
       setSongForm(emptySong);
+      setSongFile(null);
       setShowSongForm(false);
-      setMessage("Đã thêm bài hát.");
+      setMessage("Đã tải nhạc lên và thêm bài hát vào thư viện.");
       await loadSongs(keyword, 1);
     } catch (err) {
       setError(err.message);
@@ -512,18 +523,19 @@ export default function AdminPage() {
                 required
               />
             </label>
-            <label className="admin-form-wide">
-              Đường dẫn audio *
-              <input
-                type="url"
-                value={songForm.audio_url}
-                onChange={(e) =>
-                  setSongForm({ ...songForm, audio_url: e.target.value })
-                }
-                placeholder="https://..."
-                required
-              />
-            </label>
+            {!editingSongId && (
+              <label className="admin-form-wide">
+                File nhạc MP3 *
+                <input
+                  type="file"
+                  accept=".mp3,audio/mpeg"
+                  onChange={(e) => setSongFile(e.target.files?.[0] || null)}
+                  required
+                />
+                <small>Chỉ chấp nhận file MP3, dung lượng tối đa 20 MB.</small>
+                {songFile && <small>Đã chọn: {songFile.name}</small>}
+              </label>
+            )}
             <label>
               Album *
               <select
@@ -579,6 +591,7 @@ export default function AdminPage() {
                   setEditingSongId(null);
                   setSongForm(emptySong);
                   setShowSongForm(false);
+                  setSongFile(null);
                 }}
               >
                 Hủy

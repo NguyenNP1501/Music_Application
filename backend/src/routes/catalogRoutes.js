@@ -2,6 +2,10 @@ const router = require("express").Router();
 const prisma = require("../config/prisma");
 const { requireAuth } = require("../middleware/auth");
 const { getPagination } = require("../utils/catalogValidation");
+const fs = require("fs");
+const path = require("path");
+const { requireAdmin } = require("../middleware/auth");
+const { uploadMusic, uploadDir } = require("../middleware/uploadMusic");
 const validId = (value) => {
   const n = Number(value);
   return Number.isSafeInteger(n) && n > 0 ? n : null;
@@ -38,6 +42,85 @@ const canManage = (record, userId, role) =>
   record.Useruser_id === userId || role === "admin";
 
 // ================= SONGS =================
+
+// Admin tải file MP3 từ máy tính lên thư viện
+router.post("/songs/upload", requireAuth, requireAdmin, (req, res, next) => {
+  uploadMusic.single("audio")(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message });
+    if (!req.file)
+      return res.status(400).json({ message: "Vui lòng chọn file MP3." });
+
+    try {
+      const {
+        title,
+        singer,
+        composer,
+        genre,
+        description,
+        Albumalbum_id,
+        release,
+      } = req.body;
+      const albumId = validId(Albumalbum_id);
+      const releaseDate = release ? validDate(release) : new Date();
+
+      if (
+        ![title, singer, composer, genre].every((v) => validText(v, true)) ||
+        !albumId ||
+        !releaseDate ||
+        validText(description) === null
+      ) {
+        throw Object.assign(new Error("Thông tin bài hát không hợp lệ."), {
+          status: 400,
+        });
+      }
+
+      // Kiểm tra chữ ký file MP3, không chỉ dựa vào phần mở rộng.
+      const header = Buffer.alloc(3);
+      const fd = fs.openSync(req.file.path, "r");
+      fs.readSync(fd, header, 0, 3, 0);
+      fs.closeSync(fd);
+      const isMp3 =
+        header.toString("ascii") === "ID3" ||
+        (header[0] === 0xff && (header[1] & 0xe0) === 0xe0);
+
+      if (!isMp3) {
+        throw Object.assign(
+          new Error("File tải lên không phải dữ liệu MP3 hợp lệ."),
+          { status: 400 },
+        );
+      }
+
+      const album = await prisma.album.findUnique({
+        where: { album_id: albumId },
+      });
+      if (!album)
+        throw Object.assign(new Error("Album không tồn tại."), { status: 400 });
+
+      const audio_url = `/uploads/music/${req.file.filename}`;
+
+      const song = await prisma.song.create({
+        data: {
+          title: validText(title, true),
+          singer: validText(singer, true),
+          composer: validText(composer, true),
+          genre: validText(genre, true),
+          description: validText(description) ?? null,
+          audio_url,
+          release: releaseDate,
+          Albumalbum_id: albumId,
+          Useruser_id: req.user.user_id,
+        },
+      });
+
+      res.status(201).json({ song });
+    } catch (error) {
+      fs.unlink(req.file.path, () => {});
+      if (error.status)
+        return res.status(error.status).json({ message: error.message });
+      next(error);
+    }
+  });
+});
 
 // Danh sách bài hát và tìm kiếm
 router.get("/songs", async (req, res, next) => {
