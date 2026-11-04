@@ -268,10 +268,11 @@ export default function AdminPage() {
     setMessage("");
 
     try {
+      const { audio_url, ...songData } = songForm;
       await apiRequest(`/songs/${editingSongId}`, {
         method: "PATCH",
         body: {
-          ...songForm,
+          ...songData,
           Albumalbum_id: Number(songForm.Albumalbum_id),
         },
       });
