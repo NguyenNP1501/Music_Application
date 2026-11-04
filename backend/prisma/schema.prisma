@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -17,16 +17,16 @@ model User {
   created_at   DateTime @default(now()) @db.Timestamp(0)
   nickname     String?  @db.VarChar(50)
 
-  playlists     Playlist[]
-  songs         Song[]
-  albums        Album[]
-  followers     Follow[] @relation("Người theo dõi")
-  followings    Follow[] @relation("Đang theo dõi")
-  roomsCreated  Room[]   @relation("RoomCreator")
-  rooms         User_Room[]
-  sentMessages  Message[] @relation("Tin nhắn gửi đi")
-  receivedMessages Message[] @relation("Tin nhắn nhận được")
-  notifications Notification[]
+  playlists        Playlist[]
+  songs            Song[]
+  albums           Album[]
+  followers        Follow[]       @relation("Người theo dõi")
+  followings       Follow[]       @relation("Đang theo dõi")
+  roomsCreated     Room[]         @relation("RoomCreator")
+  rooms            User_Room[]
+  sentMessages     Message[]      @relation("Tin nhắn gửi đi")
+  receivedMessages Message[]      @relation("Tin nhắn nhận được")
+  notifications    Notification[]
 }
 
 model Playlist {
@@ -39,25 +39,28 @@ model Playlist {
   updated_at      DateTime @updatedAt @db.Timestamp(0)
 
   userId Int
-  user   User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  user   User            @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   songs  Playlist_Song[]
 }
 
 model Song {
-  song_id     Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  release     DateTime @db.Date
-  audio_url   String
-  description String?  @db.Text
-  genre       String
-  composer    String
-  singer      String
-  lyrics      String?  @db.LongText
+  artist      String
+  genre       String?
+  composer    String?
+  release     DateTime? @db.Date
+  description String?   @db.Text
+  lyrics      String?   @db.LongText
+  coverUrl    String?
+  audioFile   String
+  durationSec Int?
+  createdAt   DateTime  @default(now()) @db.Timestamp(0)
 
-  userId  Int
+  userId  Int?
   albumId Int?
 
-  user          User             @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  user          User?            @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   album         Album?           @relation(fields: [albumId], references: [album_id], onDelete: SetNull)
   playlists     Playlist_Song[]
   notifications Notification[]
@@ -65,11 +68,11 @@ model Song {
 }
 
 model Album {
-  album_id       Int      @id @default(autoincrement())
-  title          String
-  release        DateTime @db.Date
+  album_id        Int      @id @default(autoincrement())
+  title           String
+  release         DateTime @db.Date
   cover_image_url String?
-  description    String?  @db.Text
+  description     String?  @db.Text
 
   userId        Int
   user          User           @relation(fields: [userId], references: [user_id], onDelete: Cascade)
@@ -85,8 +88,8 @@ model Room {
   created_by Int
   songId     Int      @unique
 
-  user     User   @relation("RoomCreator", fields: [created_by], references: [user_id], onDelete: Cascade)
-  song     Song   @relation(fields: [songId], references: [song_id], onDelete: Cascade)
+  user     User        @relation("RoomCreator", fields: [created_by], references: [user_id], onDelete: Cascade)
+  song     Song        @relation(fields: [songId], references: [id], onDelete: Cascade)
   users    User_Room[]
   messages Message[]
 }
@@ -103,7 +106,7 @@ model Notification {
 
   user  User   @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   album Album? @relation(fields: [albumId], references: [album_id], onDelete: SetNull)
-  song  Song?  @relation(fields: [songId], references: [song_id], onDelete: SetNull)
+  song  Song?  @relation(fields: [songId], references: [id], onDelete: SetNull)
 }
 
 model Message {
@@ -126,7 +129,7 @@ model Playlist_Song {
   added_at   DateTime @default(now()) @db.Timestamp(0)
 
   playlist Playlist @relation(fields: [playlistId], references: [playlist_id], onDelete: Cascade)
-  song     Song     @relation(fields: [songId], references: [song_id], onDelete: Cascade)
+  song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   @@id([playlistId, songId])
 }
