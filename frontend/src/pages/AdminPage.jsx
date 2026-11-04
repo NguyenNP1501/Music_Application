@@ -231,25 +231,28 @@ export default function AdminPage() {
     }
   }
 
-  async function createAlbum(e) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setMessage("");
+  async function deleteAlbum(album) {
+    const songCount = album.songs?.length || 0;
+
+    if (songCount > 0) {
+      setError(
+        `Không thể xóa album "${album.title}" vì vẫn còn ${songCount} bài hát. Hãy xử lý các bài hát trước.`,
+      );
+      setMessage("");
+      return;
+    }
+
+    if (!window.confirm(`Bạn chắc chắn muốn xóa album "${album.title}"?`))
+      return;
 
     try {
-      await apiRequest("/albums", {
-        method: "POST",
-        body: albumForm,
-      });
-      setAlbumForm(emptyAlbum);
-      setShowAlbumForm(false);
-      setMessage("Đã thêm album.");
+      setError("");
+      setMessage("");
+      await apiRequest(`/albums/${album.album_id}`, { method: "DELETE" });
+      setMessage("Đã xóa album.");
       await loadAlbums(keyword);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setSaving(false);
     }
   }
 
