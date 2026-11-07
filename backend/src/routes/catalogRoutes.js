@@ -19,11 +19,28 @@ router.post(
   handleMusicUpload,
   catalogController.uploadSong,
 );
+
 router.get("/songs", catalogController.getSongs);
 router.get("/songs/:id", catalogController.getSongById);
-router.post("/songs", requireAuth, catalogController.createSong);
-router.patch("/songs/:id", requireAuth, catalogController.updateSong);
-router.delete("/songs/:id", requireAuth, catalogController.deleteSong);
+
+// API cũ: giữ lại để trả thông báo 410
+router.post("/songs", requireAuth, requireAdmin, catalogController.createSong);
+
+// Cập nhật thông tin và có thể thay file MP3 cùng lúc
+router.patch(
+  "/songs/:id",
+  requireAuth,
+  requireAdmin,
+  handleMusicUpload,
+  catalogController.updateSong,
+);
+
+router.delete(
+  "/songs/:id",
+  requireAuth,
+  requireAdmin,
+  catalogController.deleteSong,
+);
 
 // Albums
 router.get("/albums", catalogController.getAlbums);

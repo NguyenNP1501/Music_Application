@@ -37,10 +37,58 @@ const validUrl = (value, required = false) => {
 const canManage = (record, userId, role) =>
   record.Useruser_id === userId || role === "admin";
 
+const isMp3Buffer = (buffer) => {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 3) {
+    return false;
+  }
+
+  const hasId3Header = buffer.subarray(0, 3).toString("ascii") === "ID3";
+
+  const hasMpegFrameHeader =
+    buffer.length >= 2 && buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
+
+  return hasId3Header || hasMpegFrameHeader;
+};
+
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "music_application/songs",
+        resource_type: "video",
+        format: "mp3",
+        use_filename: false,
+        unique_filename: true,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+
+  const result = await cloudinary.uploader.destroy(publicId, {
+    resource_type: "video",
+    invalidate: true,
+  });
+
+  if (!["ok", "not found"].includes(result.result)) {
+    throw new Error(
+      `Cloudinary không xác nhận xóa tài nguyên: ${result.result}`,
+    );
+  }
+};
+
 // ================= SONGS =================
 
 const uploadSong = async (req, res, next) => {
-  if (!req.file || !req.file.buffer) {
+  if (!req.file?.buffer) {
     return res.status(400).json({
       message: "Vui lòng chọn file MP3.",
     });
@@ -57,47 +105,42 @@ const uploadSong = async (req, res, next) => {
       Albumalbum_id,
       release,
     } = req.body;
-
     const albumId = validId(Albumalbum_id);
     const releaseDate = release ? validDate(release) : new Date();
+
     if (
       ![title, singer, composer, genre].every((v) => validText(v, true)) ||
       !albumId ||
       !releaseDate ||
       validText(description) === null
     ) {
+      return res
+        .status(400)
+        .json({ message: "Thông tin bài hát không hợp lệ." });
+    }
+    if (!isMp3Buffer(req.file.buffer)) {
       return res.status(400).json({
-        message: "Thông tin bài hát không hợp lệ.",
+        message: "Nội dung file không phải MP3 hợp lệ.",
       });
     }
 
-    // Kiểm tra dữ liệu MP3 thực tế
-    const buffer = req.file.buffer;
-    const header = buffer.subarray(0, 3);
-    const isMp3 =
-      header.toString("ascii") === "ID3" ||
-      (buffer.length >= 2 && buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0);
-    if (!isMp3) {
-      return res.status(400).json({
-        message: "File tải lên không phải dữ liệu MP3 hợp lệ.",
-      });
-    }
     const album = await prisma.album.findUnique({
       where: { album_id: albumId },
     });
     if (!album) {
-      return res.status(400).json({
-        message: "Album không tồn tại.",
-      });
+      return res.status(400).json({ message: "Album không tồn tại." });
+    }
+    if (!canManage(album, req.user.user_id, req.user.role)) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thêm bài hát vào album này." });
     }
 
-    // Upload file lên Cloudinary
-    uploadedFile = await uploadToCloudinary(buffer);
+    uploadedFile = await uploadToCloudinary(req.file.buffer);
     if (!uploadedFile?.secure_url || !uploadedFile?.public_id) {
-      throw new Error("Không nhận được thông tin file từ Cloudinary.");
+      throw new Error("Cloudinary không trả về thông tin file hợp lệ.");
     }
 
-    // Lưu thông tin bài hát vào MySQL
     const song = await prisma.song.create({
       data: {
         title: validText(title, true),
@@ -113,17 +156,16 @@ const uploadSong = async (req, res, next) => {
       },
     });
 
-    return res.status(201).json({ song });
+    return res
+      .status(201)
+      .json({ message: "Upload bài hát thành công.", song });
   } catch (error) {
-    // Nếu lưu Database thất bại, xóa file vừa upload
     if (uploadedFile?.public_id) {
       try {
-        await cloudinary.uploader.destroy(uploadedFile.public_id, {
-          resource_type: "video",
-        });
+        await deleteFromCloudinary(uploadedFile.public_id);
       } catch (cleanupError) {
         console.error(
-          "Không thể xóa file Cloudinary sau lỗi Database:",
+          "Không thể dọn file Cloudinary sau lỗi:",
           cleanupError.message,
         );
       }
@@ -133,23 +175,6 @@ const uploadSong = async (req, res, next) => {
     }
     next(error);
   }
-};
-
-const uploadToCloudinary = (buffer) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "music_application/songs",
-        resource_type: "video",
-        format: "mp3",
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      },
-    );
-    stream.end(buffer);
-  });
 };
 
 const getSongs = async (req, res, next) => {
@@ -218,68 +243,29 @@ const getSongById = async (req, res, next) => {
   }
 };
 
-const createSong = async (req, res, next) => {
-  try {
-    const title = validText(req.body.title, true);
-    const singer = validText(req.body.singer, true);
-    const composer = validText(req.body.composer, true);
-    const genre = validText(req.body.genre, true);
-    const audio_url = validUrl(req.body.audio_url, true);
-    const description = validText(req.body.description);
-    const albumId = validId(req.body.Albumalbum_id);
-    const releaseDate = req.body.release
-      ? validDate(req.body.release)
-      : new Date();
-
-    if (
-      [title, singer, composer, genre, audio_url].some((v) => v === null) ||
-      description === null ||
-      !albumId ||
-      !releaseDate
-    ) {
-      return res.status(400).json({ message: "Dữ liệu bài hát không hợp lệ." });
-    }
-
-    const album = await prisma.album.findUnique({
-      where: { album_id: albumId },
-    });
-    if (!album)
-      return res.status(400).json({ message: "Album không tồn tại." });
-
-    if (!canManage(album, req.user.user_id, req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "Bạn không có quyền thêm bài hát vào album này." });
-    }
-
-    const song = await prisma.song.create({
-      data: {
-        title,
-        singer,
-        composer,
-        genre,
-        audio_url,
-        description: description ?? null,
-        release: releaseDate,
-        Albumalbum_id: albumId,
-        Useruser_id: req.user.user_id,
-      },
-    });
-
-    return res.status(201).json({ song });
-  } catch (error) {
-    next(error);
-  }
+const createSong = async (req, res) => {
+  return res.status(410).json({
+    message:
+      "API này không còn được sử dụng. Vui lòng upload MP3 qua /songs/upload.",
+  });
 };
 
 const updateSong = async (req, res, next) => {
+  let uploadedFile = null;
+
   try {
     const songId = validId(req.params.id);
-    if (!songId) return res.status(400).json({ message: "ID không hợp lệ." });
+    if (!songId) {
+      return res.status(400).json({ message: "ID không hợp lệ." });
+    }
 
-    const old = await prisma.song.findUnique({ where: { song_id: songId } });
-    if (!old)
+    const old = await prisma.song.findUnique({
+      where: { song_id: songId },
+    });
+    if (!old) {
       return res.status(404).json({ message: "Không tìm thấy bài hát." });
+    }
+
     if (!canManage(old, req.user.user_id, req.user.role)) {
       return res
         .status(403)
@@ -288,46 +274,40 @@ const updateSong = async (req, res, next) => {
 
     const data = {};
     const textFields = ["title", "singer", "composer", "genre", "description"];
-
     for (const key of textFields) {
       if (req.body[key] !== undefined) {
         const value = validText(req.body[key], key !== "description");
-        if (value === null)
+        if (value === null) {
           return res
             .status(400)
             .json({ message: `Trường ${key} không hợp lệ.` });
+        }
         data[key] = value ?? null;
       }
     }
 
-    if (req.body.audio_url !== undefined) {
-      const value = validUrl(req.body.audio_url, true);
-      if (!value)
-        return res
-          .status(400)
-          .json({ message: "Đường dẫn audio không hợp lệ." });
-      data.audio_url = value;
-    }
-
     if (req.body.release !== undefined) {
       const value = validDate(req.body.release);
-      if (!value)
+      if (!value) {
         return res
           .status(400)
           .json({ message: "Ngày phát hành không hợp lệ." });
+      }
       data.release = value;
     }
 
     if (req.body.Albumalbum_id !== undefined) {
       const albumId = validId(req.body.Albumalbum_id);
-      if (!albumId)
+      if (!albumId) {
         return res.status(400).json({ message: "Album không hợp lệ." });
+      }
 
       const album = await prisma.album.findUnique({
         where: { album_id: albumId },
       });
-      if (!album)
+      if (!album) {
         return res.status(400).json({ message: "Album không tồn tại." });
+      }
       if (!canManage(album, req.user.user_id, req.user.role)) {
         return res
           .status(403)
@@ -336,14 +316,71 @@ const updateSong = async (req, res, next) => {
       data.Albumalbum_id = albumId;
     }
 
-    if (!Object.keys(data).length)
+    // Nếu người dùng chọn file MP3 mới
+    if (req.file) {
+      if (!isMp3Buffer(req.file.buffer)) {
+        return res
+          .status(400)
+          .json({ message: "Nội dung file không phải MP3 hợp lệ." });
+      }
+
+      uploadedFile = await uploadToCloudinary(req.file.buffer);
+      if (!uploadedFile?.secure_url || !uploadedFile?.public_id) {
+        throw new Error("Cloudinary không trả về thông tin file hợp lệ.");
+      }
+      data.audio_url = uploadedFile.secure_url;
+      data.audio_public_id = uploadedFile.public_id;
+    }
+
+    if (!Object.keys(data).length) {
       return res
         .status(400)
         .json({ message: "Không có dữ liệu cần cập nhật." });
+    }
 
-    const song = await prisma.song.update({ where: { song_id: songId }, data });
-    return res.json({ song });
+    // Cập nhật Database trước khi xóa file cũ
+    const song = await prisma.song.update({
+      where: { song_id: songId },
+      data,
+    });
+
+    // Chỉ xóa file cũ sau khi Database cập nhật thành công
+    if (
+      uploadedFile &&
+      old.audio_public_id &&
+      old.audio_public_id !== uploadedFile.public_id
+    ) {
+      try {
+        await deleteFromCloudinary(old.audio_public_id);
+      } catch (cleanupError) {
+        console.error("Không thể xóa file nhạc cũ:", cleanupError.message);
+
+        return res.json({
+          message:
+            "Đã cập nhật bài hát nhưng file nhạc cũ chưa được xóa khỏi Cloudinary.",
+          cleanup_pending: true,
+          song,
+        });
+      }
+    }
+
+    return res.json({
+      message: "Cập nhật bài hát thành công.",
+      song,
+    });
   } catch (error) {
+    // Nếu upload file mới thành công nhưng cập nhật DB thất bại
+    if (uploadedFile?.public_id) {
+      try {
+        await deleteFromCloudinary(uploadedFile.public_id);
+      } catch (cleanupError) {
+        console.error(
+          "Không thể dọn file Cloudinary mới:",
+          cleanupError.message,
+        );
+      }
+    }
+
     next(error);
   }
 };
@@ -354,37 +391,35 @@ const deleteSong = async (req, res, next) => {
     if (!songId) {
       return res.status(400).json({ message: "ID không hợp lệ." });
     }
-    const song = await prisma.song.findUnique({
-      where: { song_id: songId },
-    });
 
+    const song = await prisma.song.findUnique({ where: { song_id: songId } });
     if (!song) {
       return res.status(404).json({ message: "Không tìm thấy bài hát." });
     }
-    if (song.Useruser_id !== req.user.user_id && req.user.role !== "admin") {
+
+    if (!canManage(song, req.user.user_id, req.user.role)) {
       return res
         .status(403)
         .json({ message: "Bạn không có quyền xóa bài hát này." });
     }
 
-    // Xóa dữ liệu bài hát trong Database
+    // Xóa bản ghi trước để đảm bảo bài hát không còn xuất hiện trong hệ thống nếu việc xóa file Cloudinary gặp lỗi.
     await prisma.song.delete({ where: { song_id: songId } });
 
-    // Chỉ xóa tài nguyên Cloudinary nếu bài hát có public_id
     if (song.audio_public_id) {
       try {
-        await cloudinary.uploader.destroy(song.audio_public_id, {
-          resource_type: "video",
-        });
-      } catch (cloudError) {
-        console.error("Lỗi xóa file Cloudinary:", cloudError.message);
+        await deleteFromCloudinary(song.audio_public_id);
+      } catch (cleanupError) {
+        console.error("Không thể xóa file Cloudinary:", cleanupError.message);
+
         return res.json({
           message:
-            "Đã xóa bài hát khỏi Database nhưng chưa xóa được file Cloudinary.",
+            "Đã xóa bài hát khỏi hệ thống nhưng file Cloudinary cần được dọn dẹp.",
+          cleanup_pending: true,
         });
       }
     }
-    return res.json({ message: "Đã xóa bài hát." });
+    return res.json({ message: "Đã xóa bài hát và file lưu trữ." });
   } catch (error) {
     next(error);
   }

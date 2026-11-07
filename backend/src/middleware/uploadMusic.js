@@ -9,13 +9,13 @@ const uploadMusic = multer({
   },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname || "").toLowerCase();
+    const allowedMimeTypes = [
+      "audio/mpeg",
+      "audio/mp3",
+      "application/octet-stream",
+    ];
 
-    if (
-      ext !== ".mp3" ||
-      !["audio/mpeg", "audio/mp3", "application/octet-stream"].includes(
-        file.mimetype,
-      )
-    ) {
+    if (ext !== ".mp3" || !allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error("Chỉ chấp nhận file MP3."));
     }
 
