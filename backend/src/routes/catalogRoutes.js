@@ -44,9 +44,24 @@ router.delete(
 
 // Albums
 router.get("/albums", catalogController.getAlbums);
-router.post("/albums", requireAuth, catalogController.createAlbum);
-router.patch("/albums/:id", requireAuth, catalogController.updateAlbum);
-router.delete("/albums/:id", requireAuth, catalogController.deleteAlbum);
+router.post(
+  "/albums",
+  requireAuth,
+  requireAdmin,
+  catalogController.createAlbum,
+);
+router.patch(
+  "/albums/:id",
+  requireAuth,
+  requireAdmin,
+  catalogController.updateAlbum,
+);
+router.delete(
+  "/albums/:id",
+  requireAuth,
+  requireAdmin,
+  catalogController.deleteAlbum,
+);
 
 // Artists
 router.get("/artists", catalogController.getArtists);
