@@ -9,6 +9,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function restoreSession() {
+      if (localStorage.getItem("guest_mode") === "true") {
+        setUser({
+          user_id: 1,
+          full_name: "Người dùng Demo",
+          email: "demo@music.app",
+          role: "admin",
+          avatar_url: ""
+        });
+        setLoading(false);
+        return;
+      }
+
       if (!localStorage.getItem("music_token")) {
         setLoading(false);
         return;
@@ -61,12 +73,24 @@ export function AuthProvider({ children }) {
 
   function logout() {
     clearToken();
+    localStorage.removeItem("guest_mode");
     setUser(null);
+  }
+
+  function loginAsGuest() {
+    localStorage.setItem("guest_mode", "true");
+    setUser({
+      user_id: 1,
+      full_name: "Người dùng Demo",
+      email: "demo@music.app",
+      role: "admin",
+      avatar_url: ""
+    });
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser }}
+      value={{ user, loading, login, register, logout, updateUser, loginAsGuest }}
     >
       {children}
     </AuthContext.Provider>

@@ -56,3 +56,4 @@ Tổng kết: 704 requests hoàn tất trong 10.7s, 717 MB dữ liệu đọc th
 - [x] Middleware `streamAuth` được tích hợp sẵn sàng kèm TODO cho Module 1.
 - [x] Trình phát nhạc React quản lý bằng `PlayerContext` với một thẻ `<audio>` duy nhất, hỗ trợ Play/Pause, Next/Prev, Seek, Volume, BufferingSpinner, ErrorBanner.
 - [x] Cơ chế `SeekBar` tối ưu: chỉ gửi Range Request khi người dùng thả chuột/tay, chống nghẽn đường truyền.
+

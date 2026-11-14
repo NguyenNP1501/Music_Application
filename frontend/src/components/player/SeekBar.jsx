@@ -118,3 +118,4 @@ export const SeekBar = () => {
     </div>
   );
 };
+

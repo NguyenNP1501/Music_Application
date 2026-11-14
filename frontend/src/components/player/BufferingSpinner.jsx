@@ -36,3 +36,4 @@ export const BufferingSpinner = ({ size = 20, color = '#3b82f6' }) => {
     </div>
   );
 };
+

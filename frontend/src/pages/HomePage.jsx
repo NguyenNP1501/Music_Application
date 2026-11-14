@@ -11,10 +11,18 @@ export default function HomePage({ navigate }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([apiRequest("/songs"), apiRequest("/albums")])
-      .then(([songData, albumData]) => {
-        setSongs(songData.songs || []);
-        setAlbums(albumData.albums || []);
+    Promise.allSettled([apiRequest("/songs"), apiRequest("/albums")])
+      .then(([songRes, albumRes]) => {
+        if (songRes.status === "fulfilled") {
+          const sData = songRes.value;
+          setSongs(Array.isArray(sData) ? sData : (sData?.songs || []));
+        } else {
+          setError(songRes.reason?.message || "Không thể tải danh sách bài hát.");
+        }
+        if (albumRes.status === "fulfilled") {
+          const aData = albumRes.value;
+          setAlbums(Array.isArray(aData) ? aData : (aData?.albums || []));
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -51,8 +59,8 @@ export default function HomePage({ navigate }) {
           <div className="loading">Đang tải dữ liệu...</div>
         ) : songs.length ? (
           <div className="song-grid">
-            {songs.slice(0, 4).map((song) => (
-              <SongCard key={song.song_id} song={song} />
+            {songs.slice(0, 8).map((song) => (
+              <SongCard key={song.id || song.song_id} song={song} />
             ))}
           </div>
         ) : (

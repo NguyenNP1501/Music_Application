@@ -33,7 +33,19 @@ const getContentType = (filePath) => {
  */
 const getAllSongs = async (req, res) => {
   try {
+    const q = req.query.q ? String(req.query.q).trim() : '';
+    const where = q
+      ? {
+          OR: [
+            { title: { contains: q } },
+            { artist: { contains: q } },
+            { genre: { contains: q } }
+          ]
+        }
+      : {};
+
     const songs = await prisma.song.findMany({
+      where,
       select: {
         id: true,
         title: true,
@@ -46,6 +58,20 @@ const getAllSongs = async (req, res) => {
         id: 'asc'
       }
     });
+
+    // Tương thích với cả định dạng phân trang của giao diện nhóm
+    if (req.query.page || req.query.limit) {
+      const limit = Number(req.query.limit) || 12;
+      return res.status(200).json({
+        songs,
+        pagination: {
+          page: Number(req.query.page) || 1,
+          limit,
+          total: songs.length,
+          totalPages: Math.ceil(songs.length / limit) || 1
+        }
+      });
+    }
 
     return res.status(200).json(songs);
   } catch (error) {
@@ -235,3 +261,4 @@ module.exports = {
   getSongById,
   streamSong
 };
+

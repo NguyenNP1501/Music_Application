@@ -3,7 +3,7 @@
  */
 
 export const getSongs = async () => {
-  const res = await fetch('/api/songs');
+  const res = await fetch('http://localhost:3000/api/songs');
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || `Lỗi tải danh sách bài hát (HTTP ${res.status})`);
@@ -12,7 +12,7 @@ export const getSongs = async () => {
 };
 
 export const getSongById = async (id) => {
-  const res = await fetch(`/api/songs/${id}`);
+  const res = await fetch(`http://localhost:3000/api/songs/${id}`);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || `Lỗi tải thông tin bài hát (HTTP ${res.status})`);
@@ -21,5 +21,6 @@ export const getSongById = async (id) => {
 };
 
 export const getStreamUrl = (songId) => {
-  return `/api/songs/${songId}/stream`;
+  // Trỏ trực tiếp cổng 3000 của backend để stream nhạc HTTP 206
+  return `http://localhost:3000/api/songs/${songId}/stream`;
 };

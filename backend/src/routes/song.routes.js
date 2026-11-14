@@ -11,3 +11,4 @@ router.get('/:id', songController.getSongById);
 router.get('/:id/stream', streamAuth, songController.streamSong);
 
 module.exports = router;
+
