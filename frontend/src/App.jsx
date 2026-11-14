@@ -1,78 +1,62 @@
-import React from 'react';
-import { PlayerProvider } from './context/PlayerContext';
-import { SongList } from './components/player/SongList';
-import { PlayerBar } from './components/player/PlayerBar';
-import { ErrorBanner } from './components/player/ErrorBanner';
+import { useState } from "react";
+import { useAuth } from "./services/context/AuthContext";
+import AppLayout from "./components/layout/AppLayout";
+import AuthPage from "./pages/AuthPage";
+import HomePage from "./pages/HomePage";
+import SongsPage from "./pages/SongsPage";
+import ArtistsPage from "./pages/ArtistsPage";
+import AlbumsPage from "./pages/AlbumsPage";
+import PlaylistsPage from "./pages/PlaylistsPage";
+import MessagesPage from "./pages/MessagesPage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
+import "./components/layout/NotificationPanel.css";
 
-function App() {
+// CSS chung
+import "./App.css";
+
+// CSS bố cục và điều hướng
+import "./components/layout/AppLayout.css";
+import "./components/layout/Sidebar.css";
+import "./components/layout/Header.css";
+
+// CSS các trang
+import "./pages/Homepage.css";
+import "./pages/ArtistsPage.css";
+import "./pages/AlbumsPage.css";
+
+// CSS thành phần dùng chung
+import "./components/common/SongCard.css";
+import "./components/common/EmptyState.css";
+
+export default function App() {
+  const { user, loading } = useAuth();
+  const [page, setPage] = useState("home");
+
+  const hasResetToken = new URLSearchParams(window.location.search).has(
+    "resetToken",
+  );
+
+  if (hasResetToken) return <AuthPage />;
+  if (loading) return <div className="loading-screen">Đang tải...</div>;
+  if (!user) return <AuthPage />;
+
+  const currentPage = page === "admin" && user.role !== "admin" ? "home" : page;
+
+  const pages = {
+    home: <HomePage navigate={setPage} />,
+    songs: <SongsPage />,
+    artists: <ArtistsPage />,
+    albums: <AlbumsPage />,
+    playlists: <PlaylistsPage />,
+    messages: <MessagesPage />,
+    profile: <ProfilePage />,
+    admin: <AdminPage />,
+  };
+
   return (
-    <PlayerProvider>
-      <div
-        style={{
-          minHeight: '100vh',
-          backgroundColor: '#09090b',
-          color: '#f4f4f5',
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          paddingBottom: '100px', // Khoảng trống cho PlayerBar cố định ở đáy
-          boxSizing: 'border-box'
-        }}
-      >
-        {/* Banner hiển thị lỗi mạng / lỗi stream */}
-        <ErrorBanner />
-
-        {/* Header ứng dụng */}
-        <header
-          style={{
-            borderBottom: '1px solid #27272a',
-            backgroundColor: '#18181b',
-            padding: '16px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '24px' }}>🎵</span>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f4f4f5' }}>
-              Music Streaming Platform
-            </h1>
-          </div>
-          <div
-            style={{
-              fontSize: '12px',
-              backgroundColor: '#27272a',
-              color: '#10b981',
-              padding: '4px 10px',
-              borderRadius: '999px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span
-              style={{
-                width: '6px',
-                height: '6px',
-                backgroundColor: '#10b981',
-                borderRadius: '50%',
-                display: 'inline-block'
-              }}
-            />
-            HTTP 206 Streaming Active
-          </div>
-        </header>
-
-        {/* Nội dung danh sách bài hát */}
-        <main>
-          <SongList />
-        </main>
-
-        {/* Thanh phát nhạc cố định dưới đáy màn hình */}
-        <PlayerBar />
-      </div>
-    </PlayerProvider>
+    <AppLayout page={currentPage} navigate={setPage}>
+      {pages[currentPage] || pages.home}
+    </AppLayout>
   );
 }
-
-export default App;
