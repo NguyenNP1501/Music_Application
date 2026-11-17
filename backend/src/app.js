@@ -1,34 +1,60 @@
-const express = require('express');
-const cors = require('cors');
-const songRoutes = require('./routes/song.routes');
+const express = require("express");
+const cors = require("cors");
+const prisma = require("./config/prisma");
+const errorHandler = require("./middleware/errorHandler");
+
+const songRoutes = require("./routes/song.routes");
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const catalogRoutes = require("./routes/catalogRoutes");
+const playlistRoutes = require("./routes/playlistRoutes");
+const roomRoutes = require("./routes/roomRoutes");
+const socialRoutes = require("./routes/socialRoutes");
+
+const path = require("path");
 
 const app = express();
 
-// Middleware CORS cho phép đọc các header mạng then chốt khi stream
-app.use(cors({
-  origin: '*',
-  exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length']
-}));
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN
+      ? process.env.CLIENT_ORIGIN.split(",").map((x) => x.trim())
+      : true,
+    exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
+  }),
+);
 
-// Middleware đọc JSON từ request
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
-// API kiểm tra server
-app.get('/', (req, res) => {
-  res.send('Express server is running!');
+app.get("/", (req, res) => {
+  res.json({
+    name: "Music Application API",
+    status: "running",
+  });
 });
 
-// Đăng ký route bài hát Module 2
-app.use('/api/songs', songRoutes);
+app.get("/api/health", async (req, res, next) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "connected" });
+  } catch (error) {
+    next(error);
+  }
+});
 
-// Các endpoint bổ trợ giúp các trang giao diện khác của nhóm không bị lỗi 404
-app.get('/api/albums', (req, res) => res.json({ albums: [] }));
-app.get('/api/artists', (req, res) => res.json({ artists: [] }));
-app.get('/api/playlists', (req, res) => res.json({ playlists: [] }));
-app.get('/api/rooms', (req, res) => res.json({ rooms: [] }));
-app.get('/api/notifications', (req, res) => res.json({ notifications: [] }));
-app.get('/api/auth/me', (req, res) => res.status(401).json({ message: 'Chưa đăng nhập' }));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/songs", songRoutes);
+app.use("/api", catalogRoutes);
+app.use("/api/playlists", playlistRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api", socialRoutes);
 
+app.use((req, res) => {
+  res.status(404).json({ message: "Không tìm thấy API." });
+});
+
+app.use(errorHandler);
 
 module.exports = app;
-

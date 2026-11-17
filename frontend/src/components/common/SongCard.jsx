@@ -1,26 +1,18 @@
-import React from "react";
 import { usePlayer } from "../../context/PlayerContext";
 
 export default function SongCard({ song, onAdd }) {
-  let playSong;
-  try {
-    const player = usePlayer();
-    playSong = player?.playSong;
-  } catch {
-    // Nếu nằm ngoài PlayerProvider
-  }
+  const { playSong } = usePlayer();
 
   const handlePlay = (e) => {
-    // Ngăn chặn nếu bấm nút onAdd
     if (e.target.closest(".text-button")) return;
 
-    if (playSong && song) {
+    if (song) {
       playSong({
         id: song.song_id || song.id,
         title: song.title,
         artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
         coverUrl: song.album?.cover_image_url || song.coverUrl,
-        durationSec: song.durationSec || 200,
+        durationSec: song.durationSec,
       });
     }
   };
@@ -49,7 +41,13 @@ export default function SongCard({ song, onAdd }) {
         <small>{song.album?.title || song.genre || "Chưa có album"}</small>
 
         {onAdd && (
-          <button className="text-button" onClick={() => onAdd(song)}>
+          <button
+            className="text-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAdd(song);
+            }}
+          >
             + Thêm vào playlist
           </button>
         )}

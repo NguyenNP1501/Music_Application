@@ -4,7 +4,7 @@ import { apiRequest } from "../services/api";
 import "./AuthPage.css";
 
 export default function AuthPage() {
-  const { login, register, loginAsGuest } = useAuth();
+  const { login, register } = useAuth();
   const initialToken = new URLSearchParams(window.location.search).get(
     "resetToken",
   );
@@ -295,29 +295,6 @@ export default function AuthPage() {
               </button>
             </p>
           )}
-
-          <button
-            type="button"
-            onClick={loginAsGuest}
-            style={{
-              width: "100%",
-              marginTop: "16px",
-              padding: "10px",
-              backgroundColor: "rgba(59, 130, 246, 0.15)",
-              color: "#60a5fa",
-              border: "1px dashed #3b82f6",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px"
-            }}
-          >
-            <span>🚀</span> Xem nhanh toàn bộ giao diện (Bỏ qua đăng nhập)
-          </button>
         </form>
       </section>
     </main>

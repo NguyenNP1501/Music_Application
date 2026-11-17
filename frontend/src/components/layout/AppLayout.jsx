@@ -23,7 +23,6 @@ export default function AppLayout({ page, navigate, children }) {
 
         <main className="page-content">{children}</main>
       </div>
-
       <PlayerBar />
     </div>
   );

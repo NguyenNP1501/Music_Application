@@ -15,16 +15,15 @@ export default function HomePage({ navigate }) {
       .then(([songRes, albumRes]) => {
         if (songRes.status === "fulfilled") {
           const sData = songRes.value;
-          setSongs(Array.isArray(sData) ? sData : (sData?.songs || []));
+          setSongs(Array.isArray(sData) ? sData : sData?.songs || []);
         } else {
           setError(songRes.reason?.message || "Không thể tải danh sách bài hát.");
         }
         if (albumRes.status === "fulfilled") {
           const aData = albumRes.value;
-          setAlbums(Array.isArray(aData) ? aData : (aData?.albums || []));
+          setAlbums(Array.isArray(aData) ? aData : aData?.albums || []);
         }
       })
-      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 

@@ -9,18 +9,6 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function restoreSession() {
-      if (localStorage.getItem("guest_mode") === "true") {
-        setUser({
-          user_id: 1,
-          full_name: "Người dùng Demo",
-          email: "demo@music.app",
-          role: "admin",
-          avatar_url: ""
-        });
-        setLoading(false);
-        return;
-      }
-
       if (!localStorage.getItem("music_token")) {
         setLoading(false);
         return;
@@ -29,7 +17,7 @@ export function AuthProvider({ children }) {
       try {
         const data = await apiRequest("/auth/me");
         setUser(data.user);
-      } catch (error) {
+      } catch {
         // Chỉ xóa token khi API trả về 401.
         // Lỗi 500 hoặc mất kết nối không được tự động đăng xuất.
         if (!localStorage.getItem("music_token")) {
@@ -73,24 +61,12 @@ export function AuthProvider({ children }) {
 
   function logout() {
     clearToken();
-    localStorage.removeItem("guest_mode");
     setUser(null);
-  }
-
-  function loginAsGuest() {
-    localStorage.setItem("guest_mode", "true");
-    setUser({
-      user_id: 1,
-      full_name: "Người dùng Demo",
-      email: "demo@music.app",
-      role: "admin",
-      avatar_url: ""
-    });
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser, loginAsGuest }}
+      value={{ user, loading, login, register, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>
