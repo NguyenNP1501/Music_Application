@@ -20,7 +20,7 @@ export default function SongsPage() {
       const data = await apiRequest(
         `/songs?page=${p}&limit=12&q=${encodeURIComponent(q)}`,
       );
-      setSongs(data.songs || []);
+      setSongs(Array.isArray(data) ? data : (data?.songs || []));
       setTotalPages(data.pagination?.totalPages || 1);
       setPage(p);
     } catch (err) {
@@ -69,7 +69,7 @@ export default function SongsPage() {
       ) : songs.length ? (
         <div className="song-grid">
           {songs.map((song) => (
-            <SongCard key={song.song_id} song={song} />
+            <SongCard key={song.id || song.song_id} song={song} />
           ))}
         </div>
       ) : (

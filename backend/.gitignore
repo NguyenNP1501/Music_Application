@@ -8,3 +8,10 @@ node_modules/
 
 # Build
 dist/
+
+# Prisma generated client
+src/generated/
+
+# Uploads
+uploads/songs/*.mp3
+!uploads/songs/.gitkeep

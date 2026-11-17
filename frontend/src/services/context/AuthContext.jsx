@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
       try {
         const data = await apiRequest("/auth/me");
         setUser(data.user);
-      } catch (error) {
+      } catch {
         // Chỉ xóa token khi API trả về 401.
         // Lỗi 500 hoặc mất kết nối không được tự động đăng xuất.
         if (!localStorage.getItem("music_token")) {
