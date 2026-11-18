@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../services/context/AuthContext";
 import { apiRequest } from "../services/api";
 import PageTitles from "../components/common/PageTitles";
+import { showToast } from "../utils/toast";
+
 import "./ProfilePage.css";
 
-export default function ProfilePage() {
+export default function ProfilePage({ theme, onThemeChange }) {
   const { user, updateUser, logout } = useAuth();
   const [form, setForm] = useState({
     full_name: "",
@@ -18,16 +20,12 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordMessage, setPasswordMessage] = useState("");
   const [stats, setStats] = useState({
     playlists: 0,
     following: 0,
     followers: 0,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -60,8 +58,6 @@ export default function ProfilePage() {
 
   async function save(e) {
     e.preventDefault();
-    setError("");
-    setMessage("");
     setLoading(true);
 
     const payload = { ...form };
@@ -69,9 +65,12 @@ export default function ProfilePage() {
 
     try {
       await updateUser(payload);
-      setMessage("Thông tin cá nhân đã được cập nhật.");
+      showToast("Thông tin cá nhân đã được cập nhật.");
     } catch (err) {
-      setError(err.message);
+      showToast(
+        err.message || "Không thể cập nhật thông tin cá nhân.",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -79,16 +78,17 @@ export default function ProfilePage() {
 
   async function changePassword(e) {
     e.preventDefault();
-    setPasswordError("");
-    setPasswordMessage("");
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError("Mật khẩu xác nhận không khớp.");
+      showToast("Mật khẩu xác nhận không khớp.", "error");
       return;
     }
+
     if (passwordForm.newPassword.length < 8) {
-      setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+      showToast("Mật khẩu mới phải có ít nhất 8 ký tự.", "error");
       return;
     }
+
     setPasswordSaving(true);
 
     try {
@@ -97,14 +97,15 @@ export default function ProfilePage() {
         body: passwordForm,
       });
 
-      setPasswordMessage(data.message);
+      showToast(data.message || "Đổi mật khẩu thành công.");
+
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
     } catch (err) {
-      setPasswordError(err.message);
+      showToast(err.message || "Không thể đổi mật khẩu.", "error");
     } finally {
       setPasswordSaving(false);
     }
@@ -148,12 +149,63 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <section className="profile-theme-settings">
+        <div className="profile-theme-info">
+          <div className="profile-theme-icon">
+            {theme === "dark" ? "☾" : "☀"}
+          </div>
+
+          <div>
+            <h3>Giao diện</h3>
+            <p>Tùy chỉnh chế độ hiển thị cho toàn bộ Music Space.</p>
+          </div>
+        </div>
+
+        <div className="profile-theme-options">
+          <button
+            type="button"
+            className={`profile-theme-option ${
+              theme === "light" ? "active" : ""
+            }`}
+            onClick={() => onThemeChange("light")}
+            aria-pressed={theme === "light"}
+          >
+            <span className="theme-preview light-preview">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>
+              <strong>Light Mode</strong>
+              <small>Giao diện sáng</small>
+            </span>
+            {theme === "light" && <span className="theme-check">✓</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`profile-theme-option ${
+              theme === "dark" ? "active" : ""
+            }`}
+            onClick={() => onThemeChange("dark")}
+            aria-pressed={theme === "dark"}
+          >
+            <span className="theme-preview dark-preview">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>
+              <strong>Dark Mode</strong>
+              <small>Giao diện tối</small>
+            </span>
+            {theme === "dark" && <span className="theme-check">✓</span>}
+          </button>
+        </div>
+      </section>
+
       <form className="profile-form" onSubmit={save}>
         <h3>Thông tin tài khoản</h3>
-
-        {error && <p className="error-message">{error}</p>}
-        {message && <p className="success-message">{message}</p>}
-
         <div className="profile-form-grid">
           <label>
             Họ và tên
@@ -208,12 +260,6 @@ export default function ProfilePage() {
 
       <form className="profile-form" onSubmit={changePassword}>
         <h3>Đổi mật khẩu</h3>
-
-        {passwordError && <p className="error-message">{passwordError}</p>}
-        {passwordMessage && (
-          <p className="success-message">{passwordMessage}</p>
-        )}
-
         <div className="profile-form-grid">
           <label className="profile-full">
             Mật khẩu hiện tại
