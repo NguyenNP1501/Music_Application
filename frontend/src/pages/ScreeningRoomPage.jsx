@@ -1,132 +1,267 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
+import EmptyState from "../components/common/EmptyState";
 import "./ScreeningRoomPage.css";
 
 import RoomMusicPlayer from "../components/screening/RoomMusicPlayer";
 import RoomMembers from "../components/screening/RoomMembers";
 import RoomChat from "../components/screening/RoomChat";
 
-const demoRoom = {
-  room_name: "Chill cùng Mây",
-  room_code: "MAY026",
-  members: [
-    { id: 1, name: "Anh Minh", role: "Chủ phòng", online: true },
-    { id: 2, name: "Hà Anh", role: "Thành viên", online: true },
-    { id: 3, name: "Tuấn Anh", role: "Thành viên", online: true },
-  ],
-  song: {
-    title: "Ngày dịu dàng",
-    artist: "Mây Lang Thang",
-    album: "Những ngày xanh",
-    cover: "",
-    currentTime: 124,
-    duration: 222,
-  },
-};
-
-const demoMessages = [
-  {
-    id: 1,
-    name: "Hà Anh",
-    content: "Bài này nghe lúc hoàng hôn hợp quá!",
-    time: "20:31",
-  },
-  {
-    id: 2,
-    name: "Tuấn Anh",
-    content: "Cùng nghe hết album nhé ♡",
-    time: "20:31",
-  },
-  {
-    id: 3,
-    name: "Bạn",
-    content: "Giai điệu này thật bình yên!",
-    time: "20:32",
-    mine: true,
-  },
-];
-
 export default function ScreeningRoomPage() {
   const { user } = useAuth();
-  const [activeTab] = useState("room");
-  const [messages, setMessages] = useState(demoMessages);
+
+  const [rooms, setRooms] = useState([]);
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
-  const [playing, setPlaying] = useState(true);
-  const [progress, setProgress] = useState(124);
+  const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  // Dữ liệu mẫu để dựng UI.
-  // Sau này thay bằng dữ liệu phòng thực tế từ phần xử lý của nhóm.
-  const isOwner = user?.role === "admin";
+  const loadRooms = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  const sendDemoMessage = (event) => {
+      const data = await apiRequest("/rooms");
+      const roomList = data.rooms || [];
+
+      setRooms(roomList);
+
+      // Ưu tiên phòng mà người dùng đã tham gia.
+      const joinedRoom = roomList.find((room) =>
+        room.users?.some((member) => member.Useruser_id === user?.user_id),
+      );
+
+      if (joinedRoom) {
+        setActiveRoom((current) => {
+          if (current && current.room_id === joinedRoom.room_id) {
+            return joinedRoom;
+          }
+
+          return joinedRoom;
+        });
+      } else {
+        setActiveRoom(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      setError(err.message || "Không thể tải danh sách phòng.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.user_id]);
+
+  const loadMessages = useCallback(async (roomId) => {
+    if (!roomId) return;
+
+    try {
+      setLoadingMessages(true);
+      const data = await apiRequest(`/rooms/${roomId}/messages`);
+      setMessages(data.messages || []);
+    } catch (err) {
+      setMessages([]);
+      setError(err.message || "Không thể tải tin nhắn.");
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
+
+  useEffect(() => {
+    if (activeRoom?.room_id) {
+      loadMessages(activeRoom.room_id);
+    }
+  }, [activeRoom?.room_id, loadMessages]);
+
+  const isMember = (room) =>
+    room.users?.some((member) => member.Useruser_id === user?.user_id);
+
+  const isOwner = activeRoom?.created_by === user?.user_id;
+
+  async function joinRoom(room) {
+    try {
+      setError("");
+
+      await apiRequest(`/rooms/${room.room_id}/join`, {
+        method: "POST",
+      });
+
+      const data = await apiRequest("/rooms");
+      const updatedRooms = data.rooms || [];
+
+      setRooms(updatedRooms);
+
+      const joinedRoom = updatedRooms.find(
+        (item) => item.room_id === room.room_id,
+      );
+
+      setActiveRoom(joinedRoom || null);
+    } catch (err) {
+      setError(err.message || "Không thể tham gia phòng.");
+    }
+  }
+
+  async function leaveRoom() {
+    if (!activeRoom) return;
+
+    try {
+      setError("");
+
+      await apiRequest(`/rooms/${activeRoom.room_id}/leave`, {
+        method: "DELETE",
+      });
+
+      setActiveRoom(null);
+      setMessages([]);
+      await loadRooms();
+    } catch (err) {
+      setError(err.message || "Không thể rời phòng.");
+    }
+  }
+
+  async function sendMessage(event) {
     event.preventDefault();
-    if (!message.trim()) return;
 
-    setMessages((old) => [
-      ...old,
-      {
-        id: Date.now(),
-        name: user?.full_name || "Bạn",
-        content: message.trim(),
-        time: new Date().toLocaleTimeString("vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        mine: true,
-      },
-    ]);
-    setMessage("");
-  };
+    const content = message.trim();
 
-  const formatTime = (seconds) => {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${String(sec).padStart(2, "0")}`;
-  };
+    if (!content || !activeRoom || sending) return;
+
+    try {
+      setSending(true);
+      setError("");
+
+      const data = await apiRequest(`/rooms/${activeRoom.room_id}/messages`, {
+        method: "POST",
+        body: { content },
+      });
+
+      setMessages((current) => [...current, data.message]);
+
+      setMessage("");
+    } catch (err) {
+      setError(err.message || "Không thể gửi tin nhắn.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="screening-loading-page">
+        Đang tải dữ liệu phòng công chiếu...
+      </div>
+    );
+  }
 
   return (
     <div className="screening-page">
-      <div className="screening-top">
-        <div>
-          <span className="screening-eyebrow">LISTEN TOGETHER</span>
-          <h1>{demoRoom.room_name}</h1>
-          <div className="screening-connection">
-            <span className="online-dot" />
-            Đã kết nối · Đồng bộ thời gian thực
-          </div>
+      {error && (
+        <div className="screening-error" role="alert">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError("")}
+            aria-label="Đóng thông báo"
+          >
+            ×
+          </button>
         </div>
+      )}
 
-        <button className="screening-leave-room" type="button">
-          Rời phòng
-        </button>
-      </div>
+      {!activeRoom ? (
+        <section className="screening-empty-room">
+          <span className="screening-eyebrow">LISTEN TOGETHER</span>
 
-      <div className="screening-content">
-        <main className="screening-main">
-          <RoomMusicPlayer
-            song={demoRoom.song}
-            isOwner={isOwner}
-            playing={playing}
-            onTogglePlay={() => setPlaying((value) => !value)}
-            progress={progress}
-            onProgressChange={setProgress}
-            formatTime={formatTime}
-          />
+          <h1>Phòng công chiếu</h1>
 
-          <RoomMembers members={demoRoom.members} />
-        </main>
+          {rooms.length === 0 ? (
+            <EmptyState>Hiện chưa có phòng công chiếu nào.</EmptyState>
+          ) : (
+            <>
+              <p>
+                Bạn chưa tham gia phòng nào. Hãy chọn một phòng để tham gia.
+              </p>
 
-        <RoomChat
-          messages={messages}
-          message={message}
-          onMessageChange={setMessage}
-          onSend={sendDemoMessage}
-        />
-      </div>
+              <div className="screening-available-rooms">
+                {rooms.map((room) => (
+                  <article
+                    className="screening-available-room"
+                    key={room.room_id}
+                  >
+                    <div>
+                      <strong>{room.room_name}</strong>
+                      <span>{room._count?.users || 0} thành viên</span>
+                    </div>
 
-      <div className="screening-room-code">
-        Mã phòng: <strong>{demoRoom.room_code}</strong>
-      </div>
+                    {isMember(room) ? (
+                      <button type="button" onClick={() => setActiveRoom(room)}>
+                        Vào phòng
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => joinRoom(room)}>
+                        Tham gia
+                      </button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      ) : (
+        <>
+          <header className="screening-top">
+            <div>
+              <span className="screening-eyebrow">LISTEN TOGETHER</span>
+
+              <h1>{activeRoom.room_name}</h1>
+
+              <div className="screening-connection">
+                <span className="online-dot" />
+                Phòng công chiếu
+              </div>
+            </div>
+
+            <button
+              className="screening-leave-room"
+              type="button"
+              onClick={leaveRoom}
+            >
+              Rời phòng
+            </button>
+          </header>
+
+          <div className="screening-content">
+            <main className="screening-main">
+              <RoomMusicPlayer
+                song={activeRoom.song || null}
+                isOwner={isOwner}
+              />
+
+              <RoomMembers
+                members={activeRoom.users || []}
+                currentUserId={user?.user_id}
+                creatorId={activeRoom.created_by}
+              />
+            </main>
+
+            <RoomChat
+              messages={messages}
+              message={message}
+              onMessageChange={setMessage}
+              onSend={sendMessage}
+              loading={loadingMessages}
+              sending={sending}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,48 +1,67 @@
-export default function RoomMusicPlayer({
-  song,
-  isOwner,
-  playing,
-  onTogglePlay,
-  progress,
-  onProgressChange,
-  formatTime,
-}) {
-  const percent = song.duration ? (progress / song.duration) * 100 : 0;
+export default function RoomMusicPlayer({ song, isOwner }) {
+  const hasSong = Boolean(song);
 
   return (
     <section className="room-player-card">
       <div className="room-player-heading">
         <span>{isOwner ? "BẠN LÀ CHỦ PHÒNG" : "BẠN LÀ THÀNH VIÊN"}</span>
-        <span>MÃ PHÒNG&nbsp; MAY026</span>
+        <span>{hasSong ? "ĐANG PHÁT CHUNG" : "CHƯA CÓ BÀI HÁT"}</span>
       </div>
 
       <div className="room-song-info">
         <div className="room-cover">
-          {song.cover ? (
-            <img src={song.cover} alt={song.title} />
+          {song?.cover_image_url ? (
+            <img
+              src={song.cover_image_url}
+              alt={song.title || "Ảnh bìa bài hát"}
+            />
           ) : (
-            <span>☼</span>
+            <span>♫</span>
           )}
         </div>
 
         <div className="room-song-details">
-          <span className="room-playing-label">ĐANG PHÁT CHUNG</span>
-          <h2>{song.title}</h2>
-          <p className="room-artist">{song.artist}</p>
-          <p className="room-album">Từ album {song.album}</p>
+          {hasSong ? (
+            <>
+              <span className="room-playing-label">ĐANG PHÁT CHUNG</span>
 
-          {isOwner ? (
+              <h2>{song.title}</h2>
+
+              <p className="room-artist">
+                {song.singer || song.composer || ""}
+              </p>
+
+              {song.album?.title && (
+                <p className="room-album">Từ album {song.album.title}</p>
+              )}
+            </>
+          ) : (
+            <div className="room-no-song">
+              <span className="room-playing-label">PHÒNG CÔNG CHIẾU</span>
+
+              <h2>Chưa có bài hát đang phát</h2>
+
+              <p className="room-artist">
+                Bài hát sẽ hiển thị tại đây khi được chọn.
+              </p>
+            </div>
+          )}
+
+          {hasSong && isOwner && (
             <div className="room-owner-actions">
-              <button type="button" className="room-secondary-button">
+              <button type="button" className="room-secondary-button" disabled>
                 Đổi bài hát
               </button>
-              <button type="button" className="room-primary-button">
+
+              <button type="button" className="room-primary-button" disabled>
                 Bắt đầu bài mới
               </button>
             </div>
-          ) : (
+          )}
+
+          {hasSong && !isOwner && (
             <p className="room-member-note">
-              Chỉ chủ phòng được đổi hoặc bắt đầu bài mới.
+              Bạn đang tham gia nghe nhạc cùng phòng.
             </p>
           )}
         </div>
@@ -52,17 +71,15 @@ export default function RoomMusicPlayer({
         <input
           type="range"
           min="0"
-          max={song.duration}
-          value={progress}
-          style={{ "--progress": `${percent}%` }}
-          onChange={(event) => onProgressChange(Number(event.target.value))}
-          disabled={!isOwner}
+          max="100"
+          value="0"
+          disabled
           aria-label="Tiến trình bài hát"
         />
 
         <div className="room-time-labels">
-          <span>{formatTime(progress)}</span>
-          <span>{formatTime(song.duration)}</span>
+          <span>0:00</span>
+          <span>--:--</span>
         </div>
       </div>
 
@@ -70,15 +87,16 @@ export default function RoomMusicPlayer({
         <button
           type="button"
           className="room-play-button"
-          onClick={onTogglePlay}
-          aria-label={playing ? "Tạm dừng" : "Phát"}
+          disabled
+          aria-label="Điều khiển phát nhạc"
         >
-          {playing ? "Ⅱ" : "▶"}
+          ▶
         </button>
       </div>
 
       <p className="room-player-note">
-        Mọi thành viên đều có thể tạm dừng, tiếp tục và tua.
+        Thông tin và trạng thái phát nhạc sẽ được cập nhật khi tích hợp chức
+        năng nghe nhạc chung.
       </p>
     </section>
   );

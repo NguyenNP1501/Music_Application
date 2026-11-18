@@ -494,3 +494,137 @@
     flex: 1;
   }
 }
+
+/* Empty room and loading */
+
+.screening-loading-page,
+.screening-empty-room {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  color: var(--music-text);
+}
+
+.screening-loading-page {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--music-muted);
+}
+
+.screening-empty-room {
+  padding: 20px 0;
+}
+
+.screening-empty-room h1 {
+  margin: 8px 0;
+  font-size: 26px;
+}
+
+.screening-empty-room > p {
+  color: var(--music-muted);
+  font-size: 12px;
+}
+
+.screening-available-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.screening-available-room {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px;
+  border: 1px solid var(--music-border);
+  border-radius: 12px;
+  background: var(--music-surface);
+}
+
+.screening-available-room > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.screening-available-room strong {
+  font-size: 13px;
+}
+
+.screening-available-room span {
+  color: var(--music-muted);
+  font-size: 11px;
+}
+
+.screening-available-room button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--music-primary);
+  color: white;
+  cursor: pointer;
+}
+
+.screening-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 15px;
+  border: 1px solid #bd5366;
+  border-radius: 9px;
+  background: var(--music-surface);
+  color: #e46c80;
+  font-size: 12px;
+}
+
+.screening-error button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* Dynamic member data */
+
+.room-member-avatar {
+  overflow: hidden;
+}
+
+.room-member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.room-members-empty,
+.room-chat-empty {
+  color: var(--music-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.room-chat-empty {
+  padding: 20px 5px;
+  text-align: center;
+}
+
+.room-no-song h2 {
+  margin: 16px 0 8px;
+}
+
+.room-owner-actions button:disabled,
+.room-play-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .screening-available-room {
+    align-items: flex-start;
+  }
+}
