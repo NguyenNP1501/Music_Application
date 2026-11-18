@@ -1,11 +1,20 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { getStreamUrl } from '../api/songApi';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 
-const PlayerContext = createContext();
+import { getStreamUrl } from "../api/songApi";
+
+const PlayerContext = createContext(null);
 
 export const PlayerProvider = ({ children }) => {
   const audioRef = useRef(null);
-
+  const queueRef = useRef([]);
+  const indexRef = useRef(-1);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -17,202 +26,182 @@ export const PlayerProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const updateQueue = (items, index) => {
+    queueRef.current = items;
+    indexRef.current = index;
+    setQueue(items);
+    setCurrentIndex(index);
+  };
 
-  // Khởi tạo thẻ audio và đồng bộ volume
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;
     }
   }, [volume, isMuted]);
 
-  // Phát bài hát
-  const playSong = async (song, newQueue = null) => {
-    if (!song) return;
+  const playSong = useCallback(async (song, newQueue = null) => {
+    if (!song?.id) return;
+    let items = queueRef.current;
+    let index = indexRef.current;
 
-    if (newQueue && Array.isArray(newQueue)) {
-      setQueue(newQueue);
-      const idx = newQueue.findIndex((s) => s.id === song.id);
-      setCurrentIndex(idx !== -1 ? idx : 0);
-    } else if (queue.length === 0) {
-      setQueue([song]);
-      setCurrentIndex(0);
+    if (Array.isArray(newQueue)) {
+      items = newQueue;
+      index = items.findIndex((item) => item.id === song.id);
+      if (index < 0) {
+        items = [...items, song];
+        index = items.length - 1;
+      }
     } else {
-      const idx = queue.findIndex((s) => s.id === song.id);
-      if (idx !== -1) {
-        setCurrentIndex(idx);
-      } else {
-        setQueue((prev) => [...prev, song]);
-        setCurrentIndex(queue.length);
+      index = items.findIndex((item) => item.id === song.id);
+      if (index < 0) {
+        items = [...items, song];
+        index = items.length - 1;
       }
     }
+
+    updateQueue(items, index);
 
     setCurrentSong(song);
-    setError(null);
     setCurrentTime(0);
+    setDuration(0);
     setBufferedEnd(0);
+    setError(null);
+    setIsBuffering(true);
 
-    const streamUrl = getStreamUrl(song.id);
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.src = getStreamUrl(song.id);
+    audio.load();
 
-    if (audioRef.current) {
-      audioRef.current.src = streamUrl;
-      audioRef.current.load();
-      try {
-        await audioRef.current.play();
-        setIsPlaying(true);
-      } catch (err) {
-        console.warn('Lỗi autoplay / play():', err);
-        setIsPlaying(false);
-        if (err.name === 'NotAllowedError') {
-          setError('Trình duyệt chặn tự động phát. Hãy bấm nút Play để nghe nhạc.');
-        } else {
-          setError(`Lỗi phát nhạc: ${err.message}`);
-        }
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch (err) {
+      setIsPlaying(false);
+      setIsBuffering(false);
+      if (err.name === "NotAllowedError") {
+        setError("Trình duyệt chặn tự động phát. Hãy bấm Play để nghe nhạc.");
+      } else {
+        setError(`Không thể phát nhạc: ${err.message}`);
       }
     }
-  };
+  }, []);
 
-  // Bật/tắt phát nhạc
   const togglePlay = async () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (!currentSong) {
-      if (queue.length > 0) {
-        playSong(queue[0]);
-      }
+      const first = queueRef.current[0];
+      if (first) await playSong(first);
       return;
     }
 
-    if (isPlaying) {
-      audioRef.current.pause();
+    if (!audio.paused) {
+      audio.pause();
       setIsPlaying(false);
-    } else {
-      try {
-        await audioRef.current.play();
-        setIsPlaying(true);
-        setError(null);
-      } catch (err) {
-        console.error('Lỗi khi tiếp tục phát:', err);
-        if (err.name === 'NotAllowedError') {
-          setError('Cần tương tác để phát nhạc.');
-        } else {
-          setError(`Không thể phát nhạc: ${err.message}`);
-        }
-      }
-    }
-  };
-
-  // Chuyển bài kế tiếp
-  const next = () => {
-    if (queue.length === 0) return;
-    const nextIdx = (currentIndex + 1) % queue.length;
-    playSong(queue[nextIdx]);
-  };
-
-  // Quay lại bài trước
-  const prev = () => {
-    if (queue.length === 0) return;
-    // Nếu đã nghe quá 3 giây, bấm prev sẽ tua về đầu bài
-    if (audioRef.current && audioRef.current.currentTime > 3) {
-      seek(0);
       return;
     }
-    const prevIdx = (currentIndex - 1 + queue.length) % queue.length;
-    playSong(queue[prevIdx]);
-  };
 
-  // Tua nhạc đến số giây chỉ định (kích hoạt HTTP Range Request)
-  const seek = (seconds) => {
-    if (audioRef.current && Number.isFinite(seconds)) {
-      audioRef.current.currentTime = seconds;
-      setCurrentTime(seconds);
+    try {
+      await audio.play();
+      setError(null);
+      setIsPlaying(true);
+    } catch (err) {
+      setError(`Không thể phát nhạc: ${err.message}`);
+      setIsPlaying(false);
     }
   };
 
-  // Điều chỉnh âm lượng (0 - 1)
-  const setVolume = (val) => {
-    const clamped = Math.max(0, Math.min(1, val));
-    setVolumeState(clamped);
-    if (clamped > 0 && isMuted) {
+  const next = async () => {
+    const items = queueRef.current;
+    if (items.length === 0) return;
+
+    const nextIndex = (indexRef.current + 1) % items.length;
+    await playSong(items[nextIndex]);
+  };
+
+  const prev = async () => {
+    const audio = audioRef.current;
+    if (!audio || queueRef.current.length === 0) return;
+
+    if (audio.currentTime > 3) {
+      audio.currentTime = 0;
+      setCurrentTime(0);
+      return;
+    }
+
+    const items = queueRef.current;
+    const prevIndex = (indexRef.current - 1 + items.length) % items.length;
+    await playSong(items[prevIndex]);
+  };
+
+  const seek = (seconds) => {
+    const audio = audioRef.current;
+
+    if (audio && Number.isFinite(seconds) && Number.isFinite(audio.duration)) {
+      const target = Math.max(0, Math.min(seconds, audio.duration));
+      audio.currentTime = target;
+      setCurrentTime(target);
+    }
+  };
+
+  const setVolume = (value) => {
+    const nextVolume = Math.max(0, Math.min(1, Number(value)));
+    if (!Number.isFinite(nextVolume)) return;
+
+    setVolumeState(nextVolume);
+    if (nextVolume > 0) {
       setIsMuted(false);
     }
   };
 
-  // Bật/tắt câm tiếng
   const toggleMute = () => {
-    setIsMuted((prev) => !prev);
+    setIsMuted((old) => !old);
   };
-
-  const clearError = () => {
-    setError(null);
-  };
-
-  // --- Các bộ lắng nghe sự kiện mạng từ HTML5 Audio ---
+  const clearError = () => setError(null);
   const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration || currentSong?.durationSec || 0);
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
   };
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
+    const audio = audioRef.current;
+    if (audio) setCurrentTime(audio.currentTime);
   };
 
   const handleProgress = () => {
-    if (audioRef.current && audioRef.current.buffered.length > 0) {
-      const buffered = audioRef.current.buffered;
-      const end = buffered.end(buffered.length - 1);
-      setBufferedEnd(end);
+    const audio = audioRef.current;
+
+    if (audio?.buffered.length) {
+      setBufferedEnd(audio.buffered.end(audio.buffered.length - 1));
     }
-  };
-
-  const handleWaiting = () => {
-    setIsBuffering(true);
-  };
-
-  const handleCanPlay = () => {
-    setIsBuffering(false);
-  };
-
-  const handlePlaying = () => {
-    setIsBuffering(false);
-    setIsPlaying(true);
   };
 
   const handleEnded = () => {
     setIsPlaying(false);
-    // Nếu còn bài trong queue, tự động chuyển bài tiếp theo
-    if (queue.length > 1) {
+
+    if (queueRef.current.length > 1) {
       next();
     }
   };
 
   const handleError = () => {
-    setIsBuffering(false);
     setIsPlaying(false);
-    const audioErr = audioRef.current?.error;
-    let msg = 'Đã xảy ra lỗi khi tải luồng âm thanh.';
+    setIsBuffering(false);
 
-    if (audioErr) {
-      switch (audioErr.code) {
-        case 1: // MEDIA_ERR_ABORTED
-          msg = 'Quá trình truyền luồng bị hủy.';
-          break;
-        case 2: // MEDIA_ERR_NETWORK
-          msg = 'Mất kết nối mạng khi đang stream nhạc từ server.';
-          break;
-        case 3: // MEDIA_ERR_DECODE
-          msg = 'Lỗi giải mã file âm thanh.';
-          break;
-        case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-          msg = 'Không tìm thấy file nhạc trên server hoặc định dạng không hỗ trợ (404/416).';
-          break;
-        default:
-          msg = `Lỗi mạng âm thanh mã ${audioErr.code}`;
-      }
-    }
-    setError(msg);
+    const code = audioRef.current?.error?.code;
+
+    const messages = {
+      1: "Quá trình phát nhạc đã bị hủy.",
+      2: "Mất kết nối mạng khi tải nhạc.",
+      3: "Không thể giải mã file âm thanh.",
+      4: "Không tìm thấy file nhạc hoặc định dạng không được hỗ trợ.",
+    };
+
+    setError(messages[code] || "Đã xảy ra lỗi khi tải âm thanh.");
   };
 
   return (
@@ -236,20 +225,24 @@ export const PlayerProvider = ({ children }) => {
         seek,
         setVolume,
         toggleMute,
-        clearError
+        clearError,
       }}
     >
       {children}
-      {/* Thẻ audio duy nhất toàn ứng dụng để nhạc không bị ngắt quãng */}
+
       <audio
         ref={audioRef}
         preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onProgress={handleProgress}
-        onWaiting={handleWaiting}
-        onCanPlay={handleCanPlay}
-        onPlaying={handlePlaying}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => {
+          setIsBuffering(false);
+          setIsPlaying(true);
+        }}
+        onPause={() => setIsPlaying(false)}
         onEnded={handleEnded}
         onError={handleError}
       />
@@ -259,9 +252,10 @@ export const PlayerProvider = ({ children }) => {
 
 export const usePlayer = () => {
   const context = useContext(PlayerContext);
+
   if (!context) {
-    throw new Error('usePlayer phải được sử dụng bên trong PlayerProvider');
+    throw new Error("usePlayer phải được sử dụng bên trong PlayerProvider");
   }
+
   return context;
 };
-

@@ -3,18 +3,18 @@ import { usePlayer } from "../../context/PlayerContext";
 export default function SongCard({ song, onAdd }) {
   const { playSong } = usePlayer();
 
-  const handlePlay = (e) => {
-    if (e.target.closest(".text-button")) return;
+  const cover = song.album?.cover_image_url || song.cover_image_url || "";
 
-    if (song) {
-      playSong({
-        id: song.song_id || song.id,
-        title: song.title,
-        artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
-        coverUrl: song.album?.cover_image_url || song.coverUrl,
-        durationSec: song.durationSec,
-      });
-    }
+  const handlePlay = () => {
+    if (!song) return;
+
+    playSong({
+      id: song.song_id,
+      title: song.title,
+      artist: song.singer || "Chưa rõ nghệ sĩ",
+      coverUrl: cover,
+      durationSec: song.durationSec || 0,
+    });
   };
 
   return (
@@ -22,14 +22,11 @@ export default function SongCard({ song, onAdd }) {
       className="song-card"
       onClick={handlePlay}
       style={{ cursor: "pointer", position: "relative" }}
-      title="Bấm để phát nhạc trực tuyến (HTTP 206 Streaming)"
+      title="Phát bài hát"
     >
       <div className="song-cover">
-        {song.album?.cover_image_url || song.coverUrl ? (
-          <img
-            src={song.album?.cover_image_url || song.coverUrl}
-            alt={song.album?.title || song.title || ""}
-          />
+        {cover ? (
+          <img src={cover} alt={song.title || "Bìa bài hát"} />
         ) : (
           <span>♫</span>
         )}
@@ -37,7 +34,7 @@ export default function SongCard({ song, onAdd }) {
 
       <div className="song-info">
         <strong>{song.title}</strong>
-        <span>{song.singer || song.artist || "Chưa rõ nghệ sĩ"}</span>
+        <span>{song.singer || "Chưa rõ nghệ sĩ"}</span>
         <small>{song.album?.title || song.genre || "Chưa có album"}</small>
 
         {onAdd && (

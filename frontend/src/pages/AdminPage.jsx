@@ -274,7 +274,9 @@ export default function AdminPage() {
       const { audio_url, ...songData } = songForm;
       let body = {
         ...songData,
-        Albumalbum_id: Number(songForm.Albumalbum_id),
+        Albumalbum_id: songForm.Albumalbum_id
+          ? Number(songForm.Albumalbum_id)
+          : null,
       };
 
       // Nếu có chọn file mới, gửi multipart/form-data
@@ -564,15 +566,18 @@ export default function AdminPage() {
               )}
             </label>
             <label>
-              Album *
+              Album
               <select
                 value={songForm.Albumalbum_id}
                 onChange={(e) =>
-                  setSongForm({ ...songForm, Albumalbum_id: e.target.value })
+                  setSongForm({
+                    ...songForm,
+                    Albumalbum_id: e.target.value,
+                  })
                 }
-                required
               >
-                <option value="">Chọn album</option>
+                <option value="">Không thuộc album</option>
+
                 {allAlbums.map((album) => (
                   <option key={album.album_id} value={album.album_id}>
                     {album.title}
