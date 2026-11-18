@@ -4,7 +4,7 @@ import PageTitle from "../components/common/PageTitles";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
 
-export default function HomePage({ navigate }) {
+export default function HomePage({ navigate, onSelectAlbum }) {
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,6 +184,16 @@ export default function HomePage({ navigate }) {
               <article
                 className="home-album-card"
                 key={album.album_id || album.id}
+                onClick={() => onSelectAlbum?.(album)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectAlbum?.(album);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                title={`Xem album ${album.title}`}
               >
                 <div className="home-album-cover">
                   {album.cover_image_url ? (

@@ -63,3 +63,49 @@
     grid-template-columns: 1fr;
   }
 }
+
+.artist-card[role="button"] {
+  cursor: pointer;
+}
+
+.artist-card[role="button"]:focus-visible {
+  outline: 2px solid var(--music-primary);
+  outline-offset: 3px;
+}
+
+.artist-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin-bottom: 35px;
+  padding: 22px;
+  border: 1px solid var(--music-border);
+  border-radius: 15px;
+  background: var(--music-surface);
+}
+
+.artist-detail-avatar {
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--music-soft);
+  color: var(--music-primary);
+  font-size: 65px;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .artist-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .artist-detail-avatar {
+    width: 110px;
+    height: 110px;
+    font-size: 48px;
+  }
+}

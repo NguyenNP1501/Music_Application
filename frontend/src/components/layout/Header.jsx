@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "../../services/context/AuthContext";
 
-export default function Header({ navigate, onNotifications }) {
+export default function Header({
+  navigate,
+  onNotifications,
+  theme,
+  onThemeChange,
+}) {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState("");
 
@@ -29,6 +34,21 @@ export default function Header({ navigate, onNotifications }) {
         </form>
 
         <button
+          type="button"
+          className="header-theme-toggle"
+          onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
+          aria-label={
+            theme === "dark"
+              ? "Chuyển sang giao diện sáng"
+              : "Chuyển sang giao diện tối"
+          }
+          title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+        >
+          {theme === "dark" ? "☀" : "☾"}
+        </button>
+
+        <button
+          type="button"
           className="header-icon"
           onClick={onNotifications}
           aria-label="Thông báo"
@@ -37,6 +57,7 @@ export default function Header({ navigate, onNotifications }) {
         </button>
 
         <button
+          type="button"
           className="user-avatar"
           onClick={() => navigate("profile")}
           aria-label="Hồ sơ cá nhân"

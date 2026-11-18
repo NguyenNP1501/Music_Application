@@ -18,7 +18,11 @@ const TABS = [
   { id: "albums", label: "Album" },
 ];
 
-export default function LibraryPage({ onNavigate }) {
+export default function LibraryPage({
+  onNavigate,
+  onSelectAlbum,
+  onSelectArtist,
+}) {
   const { user } = useAuth();
   const { currentSong } = usePlayer();
 
@@ -274,9 +278,11 @@ export default function LibraryPage({ onNavigate }) {
 
         {activeTab === "songs" && <SongsPage />}
 
-        {activeTab === "artists" && <ArtistsPage />}
+        {activeTab === "artists" && (
+          <ArtistsPage onSelectArtist={onSelectArtist} />
+        )}
 
-        {activeTab === "albums" && <AlbumsPage />}
+        {activeTab === "albums" && <AlbumsPage onSelectAlbum={onSelectAlbum} />}
       </div>
     </section>
   );

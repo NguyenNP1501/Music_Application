@@ -31,7 +31,8 @@ export default function App() {
   const { user, loading } = useAuth();
 
   const [page, setPage] = useState("home");
-  const [libraryTab, setLibraryTab] = useState("songs");
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [selectedArtist, setSelectedArtist] = useState("");
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("music-space-theme") === "dark"
@@ -56,17 +57,47 @@ export default function App() {
 
   if (!user) return <AuthPage />;
 
+  const openAlbum = (album) => {
+    setSelectedAlbum(album);
+    setPage("albums");
+  };
+
+  const openArtist = (artistName) => {
+    setSelectedArtist(artistName);
+    setPage("artists");
+  };
+
   const currentPage =
     ["admin", "create"].includes(page) && user.role !== "admin" ? "home" : page;
 
   const pages = {
-    home: <HomePage navigate={setPage} />,
+    home: <HomePage navigate={setPage} onSelectAlbum={openAlbum} />,
 
-    library: <LibraryPage onNavigate={setPage} />,
+    library: (
+      <LibraryPage
+        onNavigate={setPage}
+        onSelectAlbum={openAlbum}
+        onSelectArtist={openArtist}
+      />
+    ),
 
     songs: <SongsPage />,
-    artists: <ArtistsPage />,
-    albums: <AlbumsPage />,
+
+    artists: (
+      <ArtistsPage
+        selectedArtist={selectedArtist}
+        onSelectArtist={openArtist}
+        onBack={() => setSelectedArtist("")}
+      />
+    ),
+
+    albums: (
+      <AlbumsPage
+        selectedAlbum={selectedAlbum}
+        onSelectAlbum={openAlbum}
+        onBack={() => setSelectedAlbum(null)}
+      />
+    ),
 
     playlists: <PlaylistsPage />,
     screening: <ScreeningRoomPage />,
@@ -85,7 +116,12 @@ export default function App() {
     : currentPage;
 
   return (
-    <AppLayout page={sidebarPage} navigate={setPage}>
+    <AppLayout
+      page={sidebarPage}
+      navigate={setPage}
+      theme={theme}
+      onThemeChange={setTheme}
+    >
       {pages[currentPage] || pages.home}
     </AppLayout>
   );

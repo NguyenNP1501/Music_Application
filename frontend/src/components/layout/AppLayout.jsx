@@ -4,7 +4,13 @@ import Header from "./Header";
 import NotificationPanel from "./NotificationPanel";
 import { PlayerBar } from "../player/PlayerBar";
 
-export default function AppLayout({ page, navigate, children }) {
+export default function AppLayout({
+  page,
+  navigate,
+  theme,
+  onThemeChange,
+  children,
+}) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -38,6 +44,8 @@ export default function AppLayout({ page, navigate, children }) {
         <Header
           navigate={navigate}
           onNotifications={() => setShowNotifications((v) => !v)}
+          theme={theme}
+          onThemeChange={onThemeChange}
         />
 
         {showNotifications && (
