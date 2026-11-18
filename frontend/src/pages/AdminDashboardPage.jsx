@@ -798,6 +798,126 @@ export default function AdminDashboardPage({ mode = "manage" }) {
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th>Tài khoản</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((target) => (
+                    <tr key={target.user_id}>
+                      <td>{target.full_name}</td>
+                      <td>{target.email}</td>
+                      <td>
+                        <span className={`admin-role ${target.role}`}>
+                          {target.role === "admin" ? "Admin" : "User"}
+                        </span>
+                      </td>
+                      <td>
+                        {target.created_at
+                          ? new Date(target.created_at).toLocaleDateString(
+                              "vi-VN",
+                            )
+                          : "—"}
+                      </td>
+                      <td>
+                        {target.user_id !== user.user_id && (
+                          <div className="admin-row-actions">
+                            <button onClick={() => changeRole(target)}>
+                              Đổi quyền
+                            </button>
+                            <button
+                              className="delete"
+                              onClick={() => deleteUser(target)}
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <Pagination
+                page={userPage}
+                totalPages={userTotalPages}
+                onChange={async (nextPage) => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    await loadUsers(keyword, nextPage);
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            </>
+          ) : tab === "songs" ? (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Bài hát</th>
+                    <th>Ca sĩ</th>
+                    <th>Nhạc sĩ</th>
+                    <th>Thể loại</th>
+                    <th>Album</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {songs.map((song) => (
+                    <tr key={song.song_id}>
+                      <td>{song.title}</td>
+                      <td>{song.singer}</td>
+                      <td>{song.composer}</td>
+                      <td>{song.genre}</td>
+                      <td>{song.album?.title || "Không thuộc album"}</td>
+                      <td>
+                        <div className="admin-row-actions">
+                          <button onClick={() => startEditSong(song)}>
+                            Sửa
+                          </button>
+                          <button
+                            className="delete"
+                            onClick={() => deleteSong(song)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <Pagination
+                page={songPage}
+                totalPages={songTotalPages}
+                onChange={async (nextPage) => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    await loadSongs(keyword, nextPage);
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
                     <th>Ảnh bìa</th>
                     <th>Tên album</th>
                     <th>Ngày phát hành</th>
@@ -871,116 +991,6 @@ export default function AdminDashboardPage({ mode = "manage" }) {
                   setLoading(true);
                   setError("");
 
-                  try {
-                    await loadAlbums(keyword, nextPage);
-                  } catch (err) {
-                    setError(err.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              />
-            </>
-          ) : tab === "songs" ? (
-            <>
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Bài hát</th>
-                    <th>Ca sĩ</th>
-                    <th>Nhạc sĩ</th>
-                    <th>Thể loại</th>
-                    <th>Album</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {songs.map((song) => (
-                    <tr key={song.song_id}>
-                      <td>{song.title}</td>
-                      <td>{song.singer}</td>
-                      <td>{song.composer}</td>
-                      <td>{song.genre}</td>
-                      <td>{song.album?.title || "Không thuộc album"}</td>
-                      <td>
-                        <div className="admin-row-actions">
-                          <button onClick={() => startEditSong(song)}>
-                            Sửa
-                          </button>
-                          <button
-                            className="delete"
-                            onClick={() => deleteSong(song)}
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <Pagination
-                page={songPage}
-                totalPages={songTotalPages}
-                onChange={async (nextPage) => {
-                  setLoading(true);
-                  setError("");
-                  try {
-                    await loadSongs(keyword, nextPage);
-                  } catch (err) {
-                    setError(err.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Album</th>
-                    <th>Số bài hát</th>
-                    <th>Ngày phát hành</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {albums.map((album) => (
-                    <tr key={album.album_id}>
-                      <td>{album.title}</td>
-                      <td>{album.songs?.length || 0}</td>
-                      <td>
-                        {album.release
-                          ? new Date(album.release).toLocaleDateString("vi-VN")
-                          : "—"}
-                      </td>
-                      <td>
-                        <div className="admin-row-actions">
-                          <button onClick={() => startEditAlbum(album)}>
-                            Sửa
-                          </button>
-                          <button
-                            className="delete"
-                            onClick={() => deleteAlbum(album)}
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <Pagination
-                page={albumPage}
-                totalPages={albumTotalPages}
-                onChange={async (nextPage) => {
-                  setLoading(true);
-                  setError("");
                   try {
                     await loadAlbums(keyword, nextPage);
                   } catch (err) {
