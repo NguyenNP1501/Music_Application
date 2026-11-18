@@ -73,7 +73,11 @@ export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
           {songs.length ? (
             <div className="song-grid">
               {songs.map((song) => (
-                <SongCard key={song.song_id || song.id} song={song} />
+                <SongCard
+                  key={song.song_id || song.id}
+                  song={song}
+                  coverUrl={selectedAlbum.cover_image_url}
+                />
               ))}
             </div>
           ) : (

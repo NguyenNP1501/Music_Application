@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
-import { usePlayer } from "../context/PlayerContext";
 import SongsPage from "./SongsPage";
 import ArtistsPage from "./ArtistsPage";
 import AlbumsPage from "./AlbumsPage";
@@ -24,8 +23,6 @@ export default function LibraryPage({
   onSelectArtist,
 }) {
   const { user } = useAuth();
-  const { currentSong } = usePlayer();
-
   const [activeTab, setActiveTab] = useState("playlists");
   const [playlists, setPlaylists] = useState([]);
   const [savedSongs, setSavedSongs] = useState([]);
@@ -79,35 +76,30 @@ export default function LibraryPage({
   }, [loadLocalSongs, loadPlaylists]);
 
   useEffect(() => {
-    if (!currentSong?.id) return;
-
-    const song = {
-      song_id: currentSong.id,
-      title: currentSong.title,
-      singer: currentSong.artist,
-      cover_image_url: currentSong.coverUrl,
-    };
-
-    setRecentSongs((previous) => {
-      const next = [
-        song,
-        ...previous.filter((item) => item.song_id !== song.song_id),
-      ].slice(0, 50);
-
-      localStorage.setItem(storageKey("recent"), JSON.stringify(next));
-
-      return next;
-    });
-  }, [currentSong?.id, user?.user_id]);
-
-  useEffect(() => {
     const handleSavedChange = () => loadLocalSongs();
-
     window.addEventListener("music-saved-change", handleSavedChange);
-
     return () =>
       window.removeEventListener("music-saved-change", handleSavedChange);
   }, [loadLocalSongs]);
+
+  useEffect(() => {
+    const handleRecentChange = () => {
+      try {
+        const recent = JSON.parse(
+          localStorage.getItem(storageKey("recent")) || "[]",
+        );
+        setRecentSongs(Array.isArray(recent) ? recent : []);
+      } catch {
+        setRecentSongs([]);
+      }
+    };
+
+    window.addEventListener("music-recent-change", handleRecentChange);
+
+    return () => {
+      window.removeEventListener("music-recent-change", handleRecentChange);
+    };
+  }, [user?.user_id]);
 
   const removeSavedSong = (songId) => {
     const next = savedSongs.filter((song) => song.song_id !== songId);

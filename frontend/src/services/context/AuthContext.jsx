@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
     });
     setToken(data.token);
     setUser(data.user);
+    localStorage.setItem("music-current-user", JSON.stringify(data.user));
     return data.user;
   }
 
@@ -58,6 +59,7 @@ export function AuthProvider({ children }) {
       body: data,
     });
     setUser(result.user);
+    localStorage.setItem("music-current-user", JSON.stringify(result.user));
     return result.user;
   }
 

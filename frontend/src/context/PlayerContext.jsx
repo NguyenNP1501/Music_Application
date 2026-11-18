@@ -6,12 +6,13 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-
+import { useAuth } from "../services/context/AuthContext";
 import { getStreamUrl } from "../api/songApi";
 
 const PlayerContext = createContext(null);
 
 export const PlayerProvider = ({ children }) => {
+  const { user } = useAuth();
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
@@ -39,53 +40,80 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [volume, isMuted]);
 
-  const playSong = useCallback(async (song, newQueue = null) => {
-    if (!song?.id) return;
-    let items = queueRef.current;
-    let index = indexRef.current;
+  const playSong = useCallback(
+    async (song, newQueue = null) => {
+      if (!song?.id) return;
+      let items = queueRef.current;
+      let index = indexRef.current;
 
-    if (Array.isArray(newQueue)) {
-      items = newQueue;
-      index = items.findIndex((item) => item.id === song.id);
-      if (index < 0) {
-        items = [...items, song];
-        index = items.length - 1;
-      }
-    } else {
-      index = items.findIndex((item) => item.id === song.id);
-      if (index < 0) {
-        items = [...items, song];
-        index = items.length - 1;
-      }
-    }
-
-    updateQueue(items, index);
-
-    setCurrentSong(song);
-    setCurrentTime(0);
-    setDuration(0);
-    setBufferedEnd(0);
-    setError(null);
-    setIsBuffering(true);
-
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.src = getStreamUrl(song.id);
-    audio.load();
-
-    try {
-      await audio.play();
-      setIsPlaying(true);
-    } catch (err) {
-      setIsPlaying(false);
-      setIsBuffering(false);
-      if (err.name === "NotAllowedError") {
-        setError("Trình duyệt chặn tự động phát. Hãy bấm Play để nghe nhạc.");
+      if (Array.isArray(newQueue)) {
+        items = newQueue;
+        index = items.findIndex((item) => item.id === song.id);
+        if (index < 0) {
+          items = [...items, song];
+          index = items.length - 1;
+        }
       } else {
-        setError(`Không thể phát nhạc: ${err.message}`);
+        index = items.findIndex((item) => item.id === song.id);
+        if (index < 0) {
+          items = [...items, song];
+          index = items.length - 1;
+        }
       }
-    }
-  }, []);
+
+      updateQueue(items, index);
+
+      setCurrentSong(song);
+      // Lưu lịch sử nghe theo tài khoản đang đăng nhập.
+      const userId = user?.user_id;
+      if (userId) {
+        const historyKey = `music-space-recent-${userId}`;
+        try {
+          const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
+          const historySong = {
+            song_id: song.id,
+            title: song.title,
+            singer: song.artist,
+            cover_image_url: song.coverUrl || "",
+          };
+          const nextHistory = [
+            historySong,
+            ...history.filter(
+              (item) => Number(item.song_id) !== Number(song.id),
+            ),
+          ].slice(0, 50);
+          localStorage.setItem(historyKey, JSON.stringify(nextHistory));
+          window.dispatchEvent(new Event("music-recent-change"));
+        } catch (error) {
+          console.error("Không thể lưu lịch sử nghe:", error);
+        }
+      }
+      setCurrentTime(0);
+      setDuration(0);
+      setBufferedEnd(0);
+      setError(null);
+      setIsBuffering(true);
+
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.src = getStreamUrl(song.id);
+      audio.load();
+
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (err) {
+        setIsPlaying(false);
+        setIsBuffering(false);
+        if (err.name === "NotAllowedError") {
+          setError("Trình duyệt chặn tự động phát. Hãy bấm Play để nghe nhạc.");
+        } else {
+          setError(`Không thể phát nhạc: ${err.message}`);
+        }
+      }
+    },
+    [user?.user_id],
+  );
 
   const togglePlay = async () => {
     const audio = audioRef.current;
