@@ -7,9 +7,9 @@ import SongsPage from "./pages/SongsPage";
 import ArtistsPage from "./pages/ArtistsPage";
 import AlbumsPage from "./pages/AlbumsPage";
 import PlaylistsPage from "./pages/PlaylistsPage";
-import MessagesPage from "./pages/MessagesPage";
+import ScreeningRoomPage from "./pages/ScreeningRoomPage";
 import ProfilePage from "./pages/ProfilePage";
-import AdminPage from "./pages/AdminPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import MyContentPage from "./pages/MyContentPage";
 
 import "./App.css";
@@ -64,16 +64,6 @@ function LibraryPage({ activeTab, onTabChange }) {
   );
 }
 
-function PlaceholderPage({ title, description }) {
-  return (
-    <section className="feature-placeholder">
-      <span className="library-eyebrow">MUSIC SPACE</span>
-      <h1>{title}</h1>
-      <p>{description}</p>
-    </section>
-  );
-}
-
 export default function App() {
   const { user, loading } = useAuth();
 
@@ -111,41 +101,18 @@ export default function App() {
 
     library: <LibraryPage activeTab={libraryTab} onTabChange={setLibraryTab} />,
 
-    // Giữ tương thích với điều hướng tìm kiếm từ Header.
     songs: <SongsPage />,
     artists: <ArtistsPage />,
     albums: <AlbumsPage />,
 
     playlists: <PlaylistsPage />,
-    // messages: <MessagesPage />,
-    screening: <MessagesPage />,
-
+    screening: <ScreeningRoomPage />,
     "my-content": <MyContentPage />,
 
     profile: <ProfilePage theme={theme} onThemeChange={setTheme} />,
 
-    admin: <AdminPage />,
-
-    screening: (
-      <PlaceholderPage
-        title="Phòng công chiếu"
-        description="Khu vực phòng nghe nhạc chung sẽ được triển khai ở phần chức năng tiếp theo."
-      />
-    ),
-
-    "my-content": (
-      <PlaceholderPage
-        title="Nội dung của tôi"
-        description="Khu vực quản lý nội dung cá nhân sẽ được triển khai sau."
-      />
-    ),
-
-    create: (
-      <PlaceholderPage
-        title="Tạo mới"
-        description="Chức năng này sẽ được xác định và triển khai sau."
-      />
-    ),
+    admin: <AdminDashboardPage />,
+    create: <AdminDashboardPage mode="create" />,
   };
 
   const sidebarPage = ["library", "songs", "artists", "albums"].includes(

@@ -3,7 +3,7 @@ import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
 import EmptyState from "../components/common/EmptyState";
 import PageTitle from "../components/common/PageTitles";
-import "./MessagesPage.css";
+import "./ScreeningRoomPage.css";
 
 export default function MessagesPage() {
   const { user } = useAuth();

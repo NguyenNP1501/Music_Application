@@ -4,7 +4,7 @@ import { useAuth } from "../services/context/AuthContext";
 import PageTitles from "../components/common/PageTitles";
 import Pagination from "../components/common/Pagination";
 
-import "./AdminPage.css";
+import "./AdminDashboardPage.css";
 
 const tabs = [
   { id: "users", label: "Tài khoản" },
