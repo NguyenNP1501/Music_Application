@@ -27,45 +27,6 @@ import "./pages/SongsPage.css";
 import "./components/common/SongCard.css";
 import "./components/common/EmptyState.css";
 
-function LibraryPage({ activeTab, onTabChange }) {
-  const tabs = [
-    { id: "songs", label: "Bài hát" },
-    { id: "artists", label: "Nghệ sĩ" },
-    { id: "albums", label: "Album" },
-  ];
-
-  return (
-    <section className="library-page">
-      <div className="library-header">
-        <span className="library-eyebrow">YOUR COLLECTION</span>
-        <h1>Thư viện</h1>
-        <p>Quản lý và khám phá kho âm nhạc của bạn.</p>
-      </div>
-
-      <div className="library-tabs" role="tablist">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={`library-tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => onTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="library-content">
-        {activeTab === "songs" && <SongsPage />}
-        {activeTab === "artists" && <ArtistsPage />}
-        {activeTab === "albums" && <AlbumsPage />}
-      </div>
-    </section>
-  );
-}
-
 export default function App() {
   const { user, loading } = useAuth();
 

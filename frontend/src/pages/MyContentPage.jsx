@@ -20,8 +20,15 @@ async function loadAllPages(endpoint, key) {
 
 function formatDate(value) {
   if (!value) return "Chưa cập nhật";
-
   return new Date(value).toLocaleDateString("vi-VN");
+}
+
+function notify(message, type = "success") {
+  window.dispatchEvent(
+    new CustomEvent("music-toast", {
+      detail: { message, type },
+    }),
+  );
 }
 
 export default function MyContentPage() {
@@ -32,16 +39,14 @@ export default function MyContentPage() {
   const [albums, setAlbums] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [confirm, setConfirm] = useState(null);
 
   const loadContent = useCallback(async () => {
     if (!user?.user_id) return;
 
     try {
       setLoading(true);
-      setError("");
 
       const [allSongs, allAlbums] = await Promise.all([
         loadAllPages("/songs", "songs"),
@@ -53,8 +58,8 @@ export default function MyContentPage() {
       setAlbums(
         allAlbums.filter((album) => album.Useruser_id === user.user_id),
       );
-    } catch (err) {
-      setError(err.message || "Không thể tải nội dung của bạn.");
+    } catch (error) {
+      notify(error.message || "Không thể tải nội dung.", "error");
     } finally {
       setLoading(false);
     }
@@ -66,7 +71,6 @@ export default function MyContentPage() {
 
   const filteredSongs = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-
     if (!q) return songs;
 
     return songs.filter((song) =>
@@ -78,7 +82,6 @@ export default function MyContentPage() {
 
   const filteredAlbums = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-
     if (!q) return albums;
 
     return albums.filter((album) =>
@@ -88,67 +91,42 @@ export default function MyContentPage() {
     );
   }, [albums, keyword]);
 
-  async function deleteSong(song) {
-    if (!window.confirm(`Bạn có chắc muốn xóa bài hát "${song.title}"?`)) {
-      return;
-    }
+  async function handleDelete() {
+    if (!confirm) return;
+
+    const { type, item } = confirm;
+    const id = type === "song" ? item.song_id : item.album_id;
 
     try {
-      setDeletingId(`song-${song.song_id}`);
-      setError("");
-      setNotice("");
+      setDeleting(true);
 
-      const result = await apiRequest(`/songs/${song.song_id}`, {
-        method: "DELETE",
-      });
+      if (type === "song") {
+        const result = await apiRequest(`/songs/${id}`, {
+          method: "DELETE",
+        });
 
-      setSongs((old) => old.filter((item) => item.song_id !== song.song_id));
+        setSongs((old) => old.filter((song) => song.song_id !== id));
 
-      setNotice(
-        result.cleanup_pending
-          ? "Đã xóa bài hát khỏi hệ thống. File lưu trữ cần được kiểm tra thêm."
-          : "Đã xóa bài hát thành công.",
-      );
-    } catch (err) {
-      setError(err.message || "Không thể xóa bài hát.");
+        notify(
+          result.cleanup_pending
+            ? "Đã xóa bài hát. File lưu trữ cần được kiểm tra thêm."
+            : "Đã xóa bài hát thành công.",
+        );
+      } else {
+        await apiRequest(`/albums/${id}`, {
+          method: "DELETE",
+        });
+
+        setAlbums((old) => old.filter((album) => album.album_id !== id));
+
+        notify("Đã xóa album thành công.");
+      }
+
+      setConfirm(null);
+    } catch (error) {
+      notify(error.message || "Không thể thực hiện thao tác.", "error");
     } finally {
-      setDeletingId(null);
-    }
-  }
-
-  async function deleteAlbum(album) {
-    const songCount = album.songs?.length || 0;
-
-    if (songCount > 0) {
-      setError(
-        `Không thể xóa album "${album.title}" vì vẫn còn ${songCount} bài hát.`,
-      );
-      setNotice("");
-      return;
-    }
-
-    if (!window.confirm(`Bạn có chắc muốn xóa album "${album.title}"?`)) {
-      return;
-    }
-
-    try {
-      setDeletingId(`album-${album.album_id}`);
-      setError("");
-      setNotice("");
-
-      await apiRequest(`/albums/${album.album_id}`, {
-        method: "DELETE",
-      });
-
-      setAlbums((old) =>
-        old.filter((item) => item.album_id !== album.album_id),
-      );
-
-      setNotice("Đã xóa album thành công.");
-    } catch (err) {
-      setError(err.message || "Không thể xóa album.");
-    } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   }
 
@@ -159,50 +137,34 @@ export default function MyContentPage() {
       <PageTitles
         eyebrow="YOUR CONTENT"
         title="Nội dung của tôi"
-        description="Quản lý các bài hát và album do bạn sở hữu."
+        description="Quản lý những bài hát và album do bạn sở hữu."
       />
 
       <div className="my-content-overview">
-        <div className="my-content-stat">
+        <article className="my-content-stat">
           <div className="my-content-stat-icon">♫</div>
           <div>
             <span>Bài hát của tôi</span>
             <strong>{songs.length}</strong>
           </div>
-        </div>
+        </article>
 
-        <div className="my-content-stat">
+        <article className="my-content-stat">
           <div className="my-content-stat-icon">▣</div>
           <div>
             <span>Album của tôi</span>
             <strong>{albums.length}</strong>
           </div>
-        </div>
+        </article>
       </div>
-
-      {error && (
-        <div className="my-content-alert error-message" role="alert">
-          {error}
-          <button type="button" onClick={() => setError("")}>
-            ×
-          </button>
-        </div>
-      )}
-
-      {notice && (
-        <div className="my-content-alert success-message" role="status">
-          {notice}
-          <button type="button" onClick={() => setNotice("")}>
-            ×
-          </button>
-        </div>
-      )}
 
       <section className="my-content-section">
         <div className="my-content-toolbar">
-          <div className="my-content-tabs">
+          <div className="my-content-tabs" role="tablist">
             <button
               type="button"
+              role="tab"
+              aria-selected={tab === "songs"}
               className={tab === "songs" ? "active" : ""}
               onClick={() => {
                 setTab("songs");
@@ -214,6 +176,8 @@ export default function MyContentPage() {
 
             <button
               type="button"
+              role="tab"
+              aria-selected={tab === "albums"}
               className={tab === "albums" ? "active" : ""}
               onClick={() => {
                 setTab("albums");
@@ -224,14 +188,11 @@ export default function MyContentPage() {
             </button>
           </div>
 
-          <form
-            className="my-content-search"
-            onSubmit={(e) => e.preventDefault()}
-          >
+          <label className="my-content-search">
             <span>⌕</span>
             <input
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(event) => setKeyword(event.target.value)}
               placeholder={
                 tab === "songs"
                   ? "Tìm bài hát, ca sĩ, thể loại..."
@@ -248,7 +209,13 @@ export default function MyContentPage() {
                 ×
               </button>
             )}
-          </form>
+          </label>
+        </div>
+
+        <div className="my-content-table-heading">
+          <span>{tab === "songs" ? "TÊN BÀI HÁT" : "TÊN ALBUM"}</span>
+          <span>NGÀY PHÁT HÀNH</span>
+          <span>THAO TÁC</span>
         </div>
 
         {loading ? (
@@ -265,69 +232,144 @@ export default function MyContentPage() {
           <div className="my-content-list">
             {filteredSongs.map((song) => (
               <article className="my-content-item" key={song.song_id}>
-                <div className="my-content-cover">♫</div>
+                <div className="my-content-item-main">
+                  <div className="my-content-cover">
+                    {song.album?.cover_image_url ? (
+                      <img
+                        src={song.album.cover_image_url}
+                        alt={song.album.title || song.title}
+                      />
+                    ) : (
+                      <span>♫</span>
+                    )}
+                  </div>
 
-                <div className="my-content-item-info">
-                  <strong>{song.title}</strong>
-                  <span>{song.singer || "Chưa rõ ca sĩ"}</span>
-                  <small>
-                    {song.genre || "Chưa phân loại"}
-                    {" · "}
-                    {song.album?.title || "Chưa thuộc album"}
-                  </small>
+                  <div className="my-content-item-info">
+                    <strong>{song.title}</strong>
+                    <span>{song.singer || "Chưa rõ ca sĩ"}</span>
+                    <small>
+                      {song.genre || "Chưa phân loại"}
+                      {" · "}
+                      {song.album?.title || "Chưa thuộc album"}
+                    </small>
+                  </div>
                 </div>
 
                 <div className="my-content-item-date">
-                  <span>Ngày phát hành</span>
-                  <strong>{formatDate(song.release)}</strong>
+                  {formatDate(song.release)}
                 </div>
 
-                <button
-                  type="button"
-                  className="my-content-delete"
-                  disabled={deletingId === `song-${song.song_id}`}
-                  onClick={() => deleteSong(song)}
-                >
-                  {deletingId === `song-${song.song_id}`
-                    ? "Đang xóa..."
-                    : "Xóa"}
-                </button>
+                <div className="my-content-item-actions">
+                  <button
+                    type="button"
+                    className="my-content-delete"
+                    onClick={() => setConfirm({ type: "song", item: song })}
+                  >
+                    Xóa
+                  </button>
+                </div>
               </article>
             ))}
           </div>
         ) : (
-          <div className="my-content-album-grid">
+          <div className="my-content-list">
             {filteredAlbums.map((album) => (
-              <article className="my-content-album-card" key={album.album_id}>
-                <div className="my-content-album-cover">
-                  {album.cover_image_url ? (
-                    <img src={album.cover_image_url} alt={album.title} />
-                  ) : (
-                    <span>♫</span>
-                  )}
+              <article className="my-content-item" key={album.album_id}>
+                <div className="my-content-item-main">
+                  <div className="my-content-cover">
+                    {album.cover_image_url ? (
+                      <img src={album.cover_image_url} alt={album.title} />
+                    ) : (
+                      <span>♫</span>
+                    )}
+                  </div>
+
+                  <div className="my-content-item-info">
+                    <strong>{album.title}</strong>
+                    <span>{(album.songs || []).length} bài hát</span>
+                    <small>{album.description || "Chưa có mô tả"}</small>
+                  </div>
                 </div>
 
-                <div className="my-content-album-info">
-                  <strong>{album.title}</strong>
-                  <span>{(album.songs || []).length} bài hát</span>
-                  <small>Phát hành: {formatDate(album.release)}</small>
+                <div className="my-content-item-date">
+                  {formatDate(album.release)}
                 </div>
 
-                <button
-                  type="button"
-                  className="my-content-delete"
-                  disabled={deletingId === `album-${album.album_id}`}
-                  onClick={() => deleteAlbum(album)}
-                >
-                  {deletingId === `album-${album.album_id}`
-                    ? "Đang xóa..."
-                    : "Xóa album"}
-                </button>
+                <div className="my-content-item-actions">
+                  <button
+                    type="button"
+                    className="my-content-delete"
+                    onClick={() => setConfirm({ type: "album", item: album })}
+                  >
+                    Xóa
+                  </button>
+                </div>
               </article>
             ))}
           </div>
         )}
       </section>
+
+      {confirm && (
+        <div
+          className="my-content-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !deleting) {
+              setConfirm(null);
+            }
+          }}
+        >
+          <section
+            className="my-content-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="my-content-confirm-title"
+          >
+            <button
+              type="button"
+              className="my-content-modal-close"
+              onClick={() => setConfirm(null)}
+              disabled={deleting}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+
+            <div className="my-content-confirm-icon">!</div>
+
+            <h2 id="my-content-confirm-title">
+              {confirm.type === "song" ? "Xóa bài hát?" : "Xóa album?"}
+            </h2>
+
+            <p>
+              Bạn có chắc muốn xóa <strong>{confirm.item.title}</strong>?
+              {confirm.type === "song"
+                ? " Thao tác này sẽ xóa bài hát khỏi hệ thống."
+                : " Album chỉ có thể xóa khi không còn bài hát."}
+            </p>
+
+            <div className="my-content-modal-actions">
+              <button
+                type="button"
+                className="my-content-cancel"
+                onClick={() => setConfirm(null)}
+                disabled={deleting}
+              >
+                Giữ lại
+              </button>
+
+              <button
+                type="button"
+                className="my-content-confirm-delete"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Đang xóa..." : "Xác nhận xóa"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
