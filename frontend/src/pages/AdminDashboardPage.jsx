@@ -30,7 +30,7 @@ const emptyAlbum = {
   description: "",
 };
 
-export default function AdminPage({ mode = "manage" }) {
+export default function AdminDashboardPage({ mode = "manage" }) {
   const { user } = useAuth();
   const [tab, setTab] = useState(mode === "create" ? "songs" : "users");
   const [users, setUsers] = useState([]);
@@ -55,12 +55,28 @@ export default function AdminPage({ mode = "manage" }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [userPage, setUserPage] = useState(1);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userTotalPages, setUserTotalPages] = useState(1);
 
-  async function loadUsers(q = "") {
-    const data = await apiRequest(
-      `/users/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`,
-    );
+  async function loadUsers(q = "", page = userPage) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "10",
+    });
+
+    if (q.trim()) {
+      params.set("q", q.trim());
+    }
+
+    const data = await apiRequest(`/users/admin/users?${params}`);
+
     setUsers(data.users || []);
+    setUserPage(data.pagination?.page || 1);
+    setUserTotal(data.pagination?.total || 0);
+    setUserTotalPages(data.pagination?.totalPages || 1);
+
+    return data;
   }
 
   async function loadSongs(q = keyword, page = songPage) {
@@ -116,7 +132,7 @@ export default function AdminPage({ mode = "manage" }) {
     setError("");
 
     try {
-      if (tab === "users") await loadUsers(q);
+      if (tab === "users") await loadUsers(q, 1);
       if (tab === "songs") await loadSongs(q, 1);
       if (tab === "albums") await loadAlbums(q, 1);
     } catch (err) {
@@ -132,8 +148,8 @@ export default function AdminPage({ mode = "manage" }) {
       setError("");
 
       try {
-        const [userData] = await Promise.all([
-          apiRequest("/users/admin/users"),
+        await Promise.all([
+          loadUsers("", 1),
           loadSongs("", 1),
           loadAlbums("", 1),
           loadAllAlbums(),
@@ -157,7 +173,7 @@ export default function AdminPage({ mode = "manage" }) {
     setLoading(true);
 
     try {
-      if (nextTab === "users") await loadUsers("");
+      if (nextTab === "users") await loadUsers("", 1);
       if (nextTab === "songs") await loadSongs("", 1);
       if (nextTab === "albums") await loadAlbums("", 1);
     } catch (err) {
@@ -184,7 +200,7 @@ export default function AdminPage({ mode = "manage" }) {
         body: { role: nextRole },
       });
       setMessage("Đã cập nhật vai trò tài khoản.");
-      await loadUsers(keyword);
+      await loadUsers(keyword, userPage);
     } catch (err) {
       setError(err.message);
     }
@@ -201,7 +217,10 @@ export default function AdminPage({ mode = "manage" }) {
         method: "DELETE",
       });
       setMessage("Đã xóa tài khoản.");
-      await loadUsers(keyword);
+      const nextPage =
+        users.length === 1 && userPage > 1 ? userPage - 1 : userPage;
+
+      await loadUsers(keyword, nextPage);
     } catch (err) {
       setError(err.message);
     }
@@ -447,7 +466,7 @@ export default function AdminPage({ mode = "manage" }) {
         <div className="admin-overview">
           <div>
             <span>Tài khoản</span>
-            <strong>{users.length}</strong>
+            <strong>{userTotal}</strong>
           </div>
           <div>
             <span>Bài hát</span>
@@ -776,95 +795,65 @@ export default function AdminPage({ mode = "manage" }) {
           {loading ? (
             <p className="admin-loading">Đang tải dữ liệu...</p>
           ) : tab === "users" ? (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Tài khoản</th>
-                  <th>Email</th>
-                  <th>Vai trò</th>
-                  <th>Ngày tạo</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((target) => (
-                  <tr key={target.user_id}>
-                    <td>{target.full_name}</td>
-                    <td>{target.email}</td>
-                    <td>
-                      <span className={`admin-role ${target.role}`}>
-                        {target.role === "admin" ? "Admin" : "User"}
-                      </span>
-                    </td>
-                    <td>
-                      {target.created_at
-                        ? new Date(target.created_at).toLocaleDateString(
-                            "vi-VN",
-                          )
-                        : "—"}
-                    </td>
-                    <td>
-                      {target.user_id !== user.user_id && (
-                        <div className="admin-row-actions">
-                          <button onClick={() => changeRole(target)}>
-                            Đổi quyền
-                          </button>
-                          <button
-                            className="delete"
-                            onClick={() => deleteUser(target)}
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : tab === "songs" ? (
             <>
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>Bài hát</th>
-                    <th>Ca sĩ</th>
-                    <th>Thể loại</th>
-                    <th>Album ID</th>
+                    <th>Tài khoản</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Ngày tạo</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {songs.map((song) => (
-                    <tr key={song.song_id}>
-                      <td>{song.title}</td>
-                      <td>{song.singer}</td>
-                      <td>{song.genre}</td>
-                      <td>{song.Albumalbum_id}</td>
+                  {users.map((target) => (
+                    <tr key={target.user_id}>
+                      <td>{target.full_name}</td>
+                      <td>{target.email}</td>
                       <td>
-                        <div className="admin-row-actions">
-                          <button onClick={() => startEditSong(song)}>
-                            Sửa
-                          </button>
-                          <button
-                            className="delete"
-                            onClick={() => deleteSong(song)}
-                          >
-                            Xóa
-                          </button>
-                        </div>
+                        <span className={`admin-role ${target.role}`}>
+                          {target.role === "admin" ? "Admin" : "User"}
+                        </span>
+                      </td>
+                      <td>
+                        {target.created_at
+                          ? new Date(target.created_at).toLocaleDateString(
+                              "vi-VN",
+                            )
+                          : "—"}
+                      </td>
+                      <td>
+                        {target.user_id !== user.user_id && (
+                          <div className="admin-row-actions">
+                            <button onClick={() => changeRole(target)}>
+                              Đổi quyền
+                            </button>
+
+                            <button
+                              className="delete"
+                              onClick={() => deleteUser(target)}
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
               <Pagination
-                page={songPage}
-                totalPages={songTotalPages}
+                page={userPage}
+                totalPages={userTotalPages}
                 onChange={async (nextPage) => {
                   setLoading(true);
+                  setError("");
+
                   try {
-                    await loadSongs(keyword, nextPage);
+                    await loadUsers(keyword, nextPage);
                   } catch (err) {
                     setError(err.message);
                   } finally {

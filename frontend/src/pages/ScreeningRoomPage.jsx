@@ -5,7 +5,7 @@ import EmptyState from "../components/common/EmptyState";
 import PageTitle from "../components/common/PageTitles";
 import "./ScreeningRoomPage.css";
 
-export default function MessagesPage() {
+export default function ScreeningRoomPage() {
   const { user } = useAuth();
 
   const [rooms, setRooms] = useState([]);
