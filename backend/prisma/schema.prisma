@@ -39,35 +39,31 @@ model Playlist {
   description     String?   @db.VarChar(255)
   cover_image_url String?   @db.VarChar(255)
   visibility      String    @db.VarChar(255)
-  created_at      DateTime  @default(now()) @db.Timestamp(0)
+  created_at      DateTime  @db.Timestamp(0)
   updated_at      DateTime? @db.Timestamp(0)
 
-  Useruser_id Int       @map("userId")
-  user        User            @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  songs       Playlist_Song[]
+  Useruser_id Int
+
+  user  User            @relation(fields: [Useruser_id], references: [user_id])
+  songs Playlist_Song[]
 }
 
 // 3. SONG
 model Song {
-  song_id         Int       @id @default(autoincrement()) @map("id")
-  title           String    @db.VarChar(255)
-  release         DateTime? @db.Date
-  audio_url       String    @db.VarChar(1000) @map("audioFile")
-  audio_public_id String?   @db.VarChar(255)
-  description     String?   @db.Text
-  genre           String?   @db.VarChar(255)
-  composer        String?   @db.VarChar(255)
-  singer          String    @db.VarChar(255) @map("artist")
-  lyrics          String?   @db.LongText
-  coverUrl        String?   @db.VarChar(255)
-  durationSec     Int?
-  createdAt       DateTime  @default(now()) @db.Timestamp(0)
+  song_id     Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  release     DateTime  @db.Date
+  audio_url   String    @db.VarChar(255)
+  description String?   @db.VarChar(255)
+  genre       String    @db.VarChar(255)
+  composer    String    @db.VarChar(255)
+  singer      String    @db.VarChar(255)
 
-  Albumalbum_id Int @map("albumId")
+  Albumalbum_id Int?
   Roomroom_id   Int?
-  Useruser_id   Int @map("userId")
+  Useruser_id   Int
 
-  album         Album           @relation(fields: [Albumalbum_id], references: [album_id], onDelete: Cascade, onUpdate: Cascade)
+  album         Album?          @relation(fields: [Albumalbum_id], references: [album_id], onDelete: SetNull, onUpdate: Cascade)
   room          Room?           @relation(fields: [Roomroom_id], references: [room_id], onDelete: SetNull, onUpdate: Cascade)
   user          User            @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   playlists     Playlist_Song[]
@@ -82,7 +78,7 @@ model Album {
   cover_image_url String?  @db.VarChar(255)
   description     String?  @db.VarChar(255)
 
-  Useruser_id Int       @map("userId")
+  Useruser_id Int
 
   user          User           @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   songs         Song[]
@@ -93,24 +89,24 @@ model Album {
 model Message {
   message_id  Int      @id @default(autoincrement())
   content     String   @db.VarChar(255)
-  created_at  DateTime @default(now()) @db.Timestamp(0)
+  created_at  DateTime @db.Timestamp(0)
   sender_id   Int
   receiver_id Int?
-  Roomroom_id Int      @map("roomId")
+  Roomroom_id Int
 
-  sender   User  @relation("MessageSender", fields: [sender_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  receiver User? @relation("MessageReceiver", fields: [receiver_id], references: [user_id], onDelete: SetNull, onUpdate: Cascade)
-  room     Room  @relation(fields: [Roomroom_id], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  sender   User  @relation("MessageSender", fields: [sender_id], references: [user_id])
+  receiver User? @relation("MessageReceiver", fields: [receiver_id], references: [user_id])
+  room     Room  @relation(fields: [Roomroom_id], references: [room_id])
 }
 
 // 6. PLAYLIST_SONG
 model Playlist_Song {
-  Playlistplaylist_id Int      @map("playlistId")
-  Songsong_id         Int      @map("songId")
-  added_at            DateTime @default(now()) @db.Timestamp(0)
+  Playlistplaylist_id Int
+  Songsong_id         Int
+  added_at            DateTime @db.Timestamp(0)
 
-  playlist Playlist @relation(fields: [Playlistplaylist_id], references: [playlist_id], onDelete: Cascade, onUpdate: Cascade)
-  song     Song     @relation(fields: [Songsong_id], references: [song_id], onDelete: Cascade, onUpdate: Cascade)
+  playlist Playlist @relation(fields: [Playlistplaylist_id], references: [playlist_id])
+  song     Song     @relation(fields: [Songsong_id], references: [song_id])
 
   @@id([Playlistplaylist_id, Songsong_id])
 }
@@ -119,10 +115,10 @@ model Playlist_Song {
 model Room {
   room_id    Int      @id @default(autoincrement())
   room_name  String   @db.VarChar(255)
-  created_at DateTime @default(now()) @db.Timestamp(0)
+  created_at DateTime @db.Timestamp(0)
   created_by Int
 
-  creator  User        @relation("RoomCreator", fields: [created_by], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  creator  User        @relation("RoomCreator", fields: [created_by], references: [user_id])
   songs    Song[]
   users    User_Room[]
   messages Message[]
@@ -130,13 +126,13 @@ model Room {
 
 // 8. USER_ROOM
 model User_Room {
-  Useruser_id Int      @map("userId")
-  Roomroom_id Int      @map("roomId")
-  jointed_at  DateTime @default(now()) @db.Timestamp(0)
+  Useruser_id Int
+  Roomroom_id Int
+  jointed_at  DateTime @db.Timestamp(0)
   role        String?  @db.VarChar(255)
 
-  user User @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  room Room @relation(fields: [Roomroom_id], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  user User @relation(fields: [Useruser_id], references: [user_id])
+  room Room @relation(fields: [Roomroom_id], references: [room_id])
 
   @@id([Useruser_id, Roomroom_id])
 }
@@ -145,26 +141,26 @@ model User_Room {
 model Notification {
   notification_id Int      @id @default(autoincrement())
   content         String   @db.VarChar(255)
-  created_at      DateTime @default(now()) @db.Timestamp(0)
+  created_at      DateTime @db.Timestamp(0)
   is_read         Boolean
 
-  Useruser_id   Int  @map("userId")
-  Albumalbum_id Int? @map("albumId")
-  Songsong_id   Int? @map("songId")
+  Useruser_id   Int
+  Albumalbum_id Int?
+  Songsong_id   Int?
 
-  user  User   @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  album Album? @relation(fields: [Albumalbum_id], references: [album_id], onDelete: SetNull, onUpdate: Cascade)
-  song  Song?  @relation(fields: [Songsong_id], references: [song_id], onDelete: SetNull, onUpdate: Cascade)
+  user  User   @relation(fields: [Useruser_id], references: [user_id])
+  album Album? @relation(fields: [Albumalbum_id], references: [album_id])
+  song  Song?  @relation(fields: [Songsong_id], references: [song_id])
 }
 
 // 10. FOLLOW
 model Follow {
   follower_id  Int
   following_id Int
-  created_at   DateTime @default(now()) @db.Timestamp(0)
+  created_at   DateTime @db.Timestamp(0)
 
-  follower  User @relation("FollowFollower", fields: [follower_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  following User @relation("FollowFollowing", fields: [following_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  follower  User @relation("FollowFollower", fields: [follower_id], references: [user_id])
+  following User @relation("FollowFollowing", fields: [following_id], references: [user_id])
 
   @@id([follower_id, following_id])
 }
