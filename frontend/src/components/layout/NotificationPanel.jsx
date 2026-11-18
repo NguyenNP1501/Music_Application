@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
+import { showToast } from "../../utils/toast";
 
 export default function NotificationPanel({ onClose }) {
   const [notifications, setNotifications] = useState([]);
@@ -7,10 +8,12 @@ export default function NotificationPanel({ onClose }) {
 
   async function loadNotifications() {
     try {
+      setError("");
+
       const data = await apiRequest("/notifications");
       setNotifications(data.notifications || []);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Không thể tải thông báo.");
     }
   }
 
@@ -34,7 +37,7 @@ export default function NotificationPanel({ onClose }) {
         ),
       );
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể cập nhật thông báo.", "error");
     }
   }
 
@@ -42,7 +45,9 @@ export default function NotificationPanel({ onClose }) {
     <section className="notification-panel">
       <div className="notification-heading">
         <strong>Thông báo</strong>
-        <button onClick={onClose}>✕</button>
+        <button type="button" onClick={onClose}>
+          ✕
+        </button>
       </div>
 
       {error && <p className="error-message">{error}</p>}
@@ -52,6 +57,7 @@ export default function NotificationPanel({ onClose }) {
       ) : (
         notifications.map((item) => (
           <button
+            type="button"
             key={item.notification_id}
             className={`notification-item ${item.is_read ? "" : "unread"}`}
             onClick={() => markAsRead(item)}

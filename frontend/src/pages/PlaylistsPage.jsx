@@ -4,6 +4,7 @@ import { useAuth } from "../services/context/AuthContext";
 import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 import "./PlaylistsPage.css";
+import { showToast } from "../utils/toast";
 
 export default function PlaylistsPage() {
   const { user } = useAuth();
@@ -52,14 +53,12 @@ export default function PlaylistsPage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      setError("Vui lòng nhập tên playlist.");
+      showToast("Vui lòng nhập tên playlist.", "error");
       return;
     }
 
     try {
       setSaving(true);
-      setError("");
-      setMessage("");
 
       await apiRequest("/playlists", {
         method: "POST",
@@ -73,10 +72,11 @@ export default function PlaylistsPage() {
       setTitle("");
       setDescription("");
       setVisibility("private");
-      setMessage("Đã tạo playlist thành công.");
+
+      showToast("Đã tạo playlist thành công.");
       await loadData(false);
     } catch (err) {
-      setError(err.message || "Không thể tạo playlist.");
+      showToast(err.message || "Không thể tạo playlist.", "error");
     } finally {
       setSaving(false);
     }
@@ -89,9 +89,6 @@ export default function PlaylistsPage() {
       description: playlist.description || "",
       visibility: playlist.visibility || "private",
     });
-
-    setError("");
-    setMessage("");
   }
 
   function cancelEdit() {
@@ -111,14 +108,12 @@ export default function PlaylistsPage() {
     e.preventDefault();
 
     if (!editingPlaylist?.title.trim()) {
-      setError("Tên playlist không được để trống.");
+      showToast("Tên playlist không được để trống.", "error");
       return;
     }
 
     try {
       setSaving(true);
-      setError("");
-      setMessage("");
 
       await apiRequest(`/playlists/${editingPlaylist.playlist_id}`, {
         method: "PATCH",
@@ -130,10 +125,10 @@ export default function PlaylistsPage() {
       });
 
       setEditingPlaylist(null);
-      setMessage("Đã cập nhật playlist.");
+      showToast("Đã cập nhật playlist thành công.");
       await loadData(false);
     } catch (err) {
-      setError(err.message || "Không thể cập nhật playlist.");
+      showToast(err.message || "Không thể cập nhật playlist.", "error");
     } finally {
       setSaving(false);
     }
@@ -143,14 +138,11 @@ export default function PlaylistsPage() {
     const songId = selectedSongs[playlistId];
 
     if (!songId) {
-      setError("Bạn cần chọn bài hát trước.");
+      showToast("Bạn cần chọn bài hát trước.", "error");
       return;
     }
 
     try {
-      setError("");
-      setMessage("");
-
       await apiRequest(`/playlists/${playlistId}/songs`, {
         method: "POST",
         body: {
@@ -158,15 +150,15 @@ export default function PlaylistsPage() {
         },
       });
 
-      setMessage("Đã thêm bài hát vào playlist.");
       setSelectedSongs((old) => ({
         ...old,
         [playlistId]: "",
       }));
 
+      showToast("Đã thêm bài hát vào playlist.");
       await loadData(false);
     } catch (err) {
-      setError(err.message || "Không thể thêm bài hát.");
+      showToast(err.message || "Không thể thêm bài hát.", "error");
     }
   }
 
@@ -176,29 +168,22 @@ export default function PlaylistsPage() {
     }
 
     try {
-      setError("");
-      setMessage("");
-
       await apiRequest(`/playlists/${playlistId}/songs/${songId}`, {
         method: "DELETE",
       });
 
-      setMessage("Đã xóa bài hát khỏi playlist.");
+      showToast("Đã xóa bài hát khỏi playlist.");
       await loadData(false);
     } catch (err) {
-      setError(err.message || "Không thể xóa bài hát.");
+      showToast(err.message || "Không thể xóa bài hát.", "error");
     }
   }
-
   async function deletePlaylist(playlistId) {
     if (!window.confirm("Bạn có chắc muốn xóa playlist này?")) {
       return;
     }
 
     try {
-      setError("");
-      setMessage("");
-
       await apiRequest(`/playlists/${playlistId}`, {
         method: "DELETE",
       });
@@ -207,10 +192,10 @@ export default function PlaylistsPage() {
         setEditingPlaylist(null);
       }
 
-      setMessage("Đã xóa playlist.");
+      showToast("Đã xóa playlist thành công.");
       await loadData(false);
     } catch (err) {
-      setError(err.message || "Không thể xóa playlist.");
+      showToast(err.message || "Không thể xóa playlist.", "error");
     }
   }
 
@@ -281,16 +266,6 @@ export default function PlaylistsPage() {
           <span>!</span>
           {error}
           <button type="button" onClick={() => setError("")}>
-            ×
-          </button>
-        </div>
-      )}
-
-      {message && (
-        <div className="playlist-alert playlist-alert-success" role="status">
-          <span>✓</span>
-          {message}
-          <button type="button" onClick={() => setMessage("")}>
             ×
           </button>
         </div>

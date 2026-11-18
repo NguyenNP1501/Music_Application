@@ -3,6 +3,7 @@ import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
 import PageTitles from "../components/common/PageTitles";
 import Pagination from "../components/common/Pagination";
+import { showToast } from "../utils/toast";
 
 import "./AdminDashboardPage.css";
 
@@ -168,7 +169,7 @@ export default function AdminDashboardPage({ mode = "manage" }) {
     setTab(nextTab);
     setKeyword("");
     setError("");
-    setMessage("");
+
     setLoading(true);
 
     try {
@@ -189,58 +190,62 @@ export default function AdminDashboardPage({ mode = "manage" }) {
 
   async function changeRole(target) {
     const nextRole = target.role === "admin" ? "user" : "admin";
-    if (!window.confirm(`Đổi vai trò tài khoản này thành ${nextRole}?`)) return;
+
+    if (!window.confirm(`Đổi vai trò tài khoản này thành ${nextRole}?`)) {
+      return;
+    }
 
     try {
-      setError("");
-      setMessage("");
       await apiRequest(`/users/admin/users/${target.user_id}/role`, {
         method: "PATCH",
         body: { role: nextRole },
       });
-      setMessage("Đã cập nhật vai trò tài khoản.");
+
+      showToast("Đã cập nhật vai trò tài khoản.");
       await loadUsers(keyword, userPage);
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể cập nhật vai trò.", "error");
     }
   }
 
   async function deleteUser(target) {
-    if (!window.confirm(`Bạn chắc chắn muốn xóa tài khoản ${target.email}?`))
+    if (!window.confirm(`Bạn chắc chắn muốn xóa tài khoản ${target.email}?`)) {
       return;
+    }
 
     try {
-      setError("");
-      setMessage("");
       await apiRequest(`/users/admin/users/${target.user_id}`, {
         method: "DELETE",
       });
-      setMessage("Đã xóa tài khoản.");
+
+      showToast("Đã xóa tài khoản.");
+
       const nextPage =
         users.length === 1 && userPage > 1 ? userPage - 1 : userPage;
 
       await loadUsers(keyword, nextPage);
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể xóa tài khoản.", "error");
     }
   }
 
   async function createSong(e) {
     e.preventDefault();
     if (!songFile) {
-      setError("Vui lòng chọn file MP3.");
+      showToast("Vui lòng chọn file MP3.", "error");
       return;
     }
-
     setSaving(true);
-    setError("");
-    setMessage("");
 
     try {
       const formData = new FormData();
+
       Object.entries(songForm).forEach(([key, value]) => {
-        if (key !== "audio_url") formData.append(key, value);
+        if (key !== "audio_url") {
+          formData.append(key, value);
+        }
       });
+
       formData.append("audio", songFile);
 
       await apiRequest("/songs/upload", {
@@ -251,10 +256,11 @@ export default function AdminDashboardPage({ mode = "manage" }) {
       setSongForm(emptySong);
       setSongFile(null);
       setShowSongForm(false);
-      setMessage("Đã tải nhạc lên và thêm bài hát vào thư viện.");
+
+      showToast("Đã tải nhạc lên và thêm bài hát vào thư viện.");
       await loadSongs(keyword, 1);
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể thêm bài hát.", "error");
     } finally {
       setSaving(false);
     }
@@ -279,17 +285,15 @@ export default function AdminDashboardPage({ mode = "manage" }) {
 
     setShowSongForm(true);
     setError("");
-    setMessage("");
   }
 
   async function updateSong(e) {
     e.preventDefault();
     setSaving(true);
-    setError("");
-    setMessage("");
 
     try {
       const { audio_url, ...songData } = songForm;
+
       let body = {
         ...songData,
         Albumalbum_id: songForm.Albumalbum_id
@@ -297,7 +301,6 @@ export default function AdminDashboardPage({ mode = "manage" }) {
           : null,
       };
 
-      // Nếu có chọn file mới, gửi multipart/form-data
       if (songFile) {
         const formData = new FormData();
         Object.entries(body).forEach(([key, value]) => {
@@ -310,19 +313,21 @@ export default function AdminDashboardPage({ mode = "manage" }) {
         method: "PATCH",
         body,
       });
-
       setSongForm(emptySong);
       setSongFile(null);
       setEditingSongId(null);
       setShowSongForm(false);
-      setMessage(
+
+      showToast(
         result.cleanup_pending
           ? "Đã cập nhật bài hát, nhưng file nhạc cũ cần được dọn dẹp trên Cloudinary."
           : "Đã cập nhật bài hát thành công.",
+        result.cleanup_pending ? "error" : "success",
       );
+
       await loadSongs(keyword, 1);
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể cập nhật bài hát.", "error");
     } finally {
       setSaving(false);
     }
@@ -333,21 +338,25 @@ export default function AdminDashboardPage({ mode = "manage" }) {
       !window.confirm(
         `Bạn chắc chắn muốn xóa bài hát "${song.title}"?\n\nBài hát cũng sẽ bị xóa khỏi các playlist có chứa bài hát này.`,
       )
-    )
+    ) {
       return;
+    }
 
     try {
       const result = await apiRequest(`/songs/${song.song_id}`, {
         method: "DELETE",
       });
-      setMessage(
+
+      showToast(
         result.cleanup_pending
           ? "Đã xóa bài hát khỏi hệ thống, nhưng file Cloudinary cần được dọn dẹp."
           : "Đã xóa bài hát và file lưu trữ.",
+        result.cleanup_pending ? "error" : "success",
       );
+
       await reloadSongsAfterDelete();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể xóa bài hát.", "error");
     }
   }
 
@@ -355,32 +364,32 @@ export default function AdminDashboardPage({ mode = "manage" }) {
     const songCount = album.songs?.length || 0;
 
     if (songCount > 0) {
-      setError(
+      showToast(
         `Không thể xóa album "${album.title}" vì vẫn còn ${songCount} bài hát. Hãy xử lý các bài hát trước.`,
+        "error",
       );
-      setMessage("");
       return;
     }
 
-    if (!window.confirm(`Bạn chắc chắn muốn xóa album "${album.title}"?`))
+    if (!window.confirm(`Bạn chắc chắn muốn xóa album "${album.title}"?`)) {
       return;
+    }
 
     try {
-      setError("");
-      setMessage("");
-      await apiRequest(`/albums/${album.album_id}`, { method: "DELETE" });
-      setMessage("Đã xóa album.");
+      await apiRequest(`/albums/${album.album_id}`, {
+        method: "DELETE",
+      });
+
+      showToast("Đã xóa album.");
       await reloadAlbumsAfterDelete();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể xóa album.", "error");
     }
   }
 
   async function createAlbum(e) {
     e.preventDefault();
     setSaving(true);
-    setError("");
-    setMessage("");
 
     try {
       await apiRequest("/albums", {
@@ -390,11 +399,12 @@ export default function AdminDashboardPage({ mode = "manage" }) {
 
       setAlbumForm(emptyAlbum);
       setShowAlbumForm(false);
-      setMessage("Đã thêm album.");
+
+      showToast("Đã thêm album thành công.");
       await loadAlbums(keyword, 1);
       await loadAllAlbums();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể thêm album.", "error");
     } finally {
       setSaving(false);
     }
@@ -412,14 +422,11 @@ export default function AdminDashboardPage({ mode = "manage" }) {
     });
     setShowAlbumForm(true);
     setError("");
-    setMessage("");
   }
 
   async function updateAlbum(e) {
     e.preventDefault();
     setSaving(true);
-    setError("");
-    setMessage("");
 
     try {
       await apiRequest(`/albums/${editingAlbumId}`, {
@@ -430,11 +437,12 @@ export default function AdminDashboardPage({ mode = "manage" }) {
       setAlbumForm(emptyAlbum);
       setEditingAlbumId(null);
       setShowAlbumForm(false);
-      setMessage("Đã cập nhật album.");
+
+      showToast("Đã cập nhật album thành công.");
       await loadAlbums(keyword, albumPage);
       await loadAllAlbums();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Không thể cập nhật album.", "error");
     } finally {
       setSaving(false);
     }
@@ -510,7 +518,6 @@ export default function AdminDashboardPage({ mode = "manage" }) {
       )}
 
       {error && <p className="admin-alert error">{error}</p>}
-      {message && <p className="admin-alert success">{message}</p>}
 
       {mode === "create" && (
         <div className="create-content-options">
@@ -527,7 +534,6 @@ export default function AdminDashboardPage({ mode = "manage" }) {
               setAlbumForm(emptyAlbum);
               setSongFile(null);
               setError("");
-              setMessage("");
             }}
           >
             <span className="create-content-icon">♫</span>
@@ -551,7 +557,6 @@ export default function AdminDashboardPage({ mode = "manage" }) {
               setAlbumForm(emptyAlbum);
               setSongFile(null);
               setError("");
-              setMessage("");
             }}
           >
             <span className="create-content-icon">▣</span>

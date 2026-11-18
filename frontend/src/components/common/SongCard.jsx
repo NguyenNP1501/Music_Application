@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePlayer } from "../../context/PlayerContext";
+import { showToast } from "../../utils/toast";
 
 export default function SongCard({ song, onAdd, onRemoveSaved }) {
   const { playSong } = usePlayer();
@@ -43,10 +44,12 @@ export default function SongCard({ song, onAdd, onRemoveSaved }) {
       localStorage.getItem("music-current-user") || "null",
     )?.user_id;
 
-    if (!userId) return;
+    if (!userId) {
+      showToast("Vui lòng đăng nhập để lưu bài hát.", "error");
+      return;
+    }
 
     const key = `music-space-saved-${userId}`;
-
     let items = [];
 
     try {
@@ -54,6 +57,8 @@ export default function SongCard({ song, onAdd, onRemoveSaved }) {
     } catch {
       items = [];
     }
+
+    const nextSaved = !saved;
 
     if (saved) {
       items = items.filter((item) => item.song_id !== song.song_id);
@@ -69,10 +74,19 @@ export default function SongCard({ song, onAdd, onRemoveSaved }) {
       ];
     }
 
-    localStorage.setItem(key, JSON.stringify(items));
-    setSaved(!saved);
+    try {
+      localStorage.setItem(key, JSON.stringify(items));
+      setSaved(nextSaved);
+      window.dispatchEvent(new Event("music-saved-change"));
 
-    window.dispatchEvent(new Event("music-saved-change"));
+      showToast(
+        nextSaved
+          ? "Đã lưu bài hát vào danh sách yêu thích."
+          : "Đã bỏ lưu bài hát.",
+      );
+    } catch {
+      showToast("Không thể cập nhật danh sách bài hát đã lưu.", "error");
+    }
   };
 
   return (

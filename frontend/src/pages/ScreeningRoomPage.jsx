@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
 import EmptyState from "../components/common/EmptyState";
+import { showToast } from "../utils/toast";
+
 import "./ScreeningRoomPage.css";
 
 import RoomMusicPlayer from "../components/screening/RoomMusicPlayer";
@@ -86,8 +88,6 @@ export default function ScreeningRoomPage() {
 
   async function joinRoom(room) {
     try {
-      setError("");
-
       await apiRequest(`/rooms/${room.room_id}/join`, {
         method: "POST",
       });
@@ -102,8 +102,9 @@ export default function ScreeningRoomPage() {
       );
 
       setActiveRoom(joinedRoom || null);
+      showToast("Đã tham gia phòng công chiếu.");
     } catch (err) {
-      setError(err.message || "Không thể tham gia phòng.");
+      showToast(err.message || "Không thể tham gia phòng.", "error");
     }
   }
 
@@ -111,17 +112,17 @@ export default function ScreeningRoomPage() {
     if (!activeRoom) return;
 
     try {
-      setError("");
-
       await apiRequest(`/rooms/${activeRoom.room_id}/leave`, {
         method: "DELETE",
       });
 
       setActiveRoom(null);
       setMessages([]);
+      showToast("Đã rời phòng công chiếu.");
+
       await loadRooms();
     } catch (err) {
-      setError(err.message || "Không thể rời phòng.");
+      showToast(err.message || "Không thể rời phòng.", "error");
     }
   }
 
@@ -134,7 +135,6 @@ export default function ScreeningRoomPage() {
 
     try {
       setSending(true);
-      setError("");
 
       const data = await apiRequest(`/rooms/${activeRoom.room_id}/messages`, {
         method: "POST",
@@ -142,10 +142,9 @@ export default function ScreeningRoomPage() {
       });
 
       setMessages((current) => [...current, data.message]);
-
       setMessage("");
     } catch (err) {
-      setError(err.message || "Không thể gửi tin nhắn.");
+      showToast(err.message || "Không thể gửi tin nhắn.", "error");
     } finally {
       setSending(false);
     }
