@@ -105,35 +105,51 @@ const uploadSong = async (req, res, next) => {
       Albumalbum_id,
       release,
     } = req.body;
-    const albumId = validId(Albumalbum_id);
+
+    const albumId =
+      Albumalbum_id === undefined ||
+      Albumalbum_id === null ||
+      Albumalbum_id === ""
+        ? null
+        : validId(Albumalbum_id);
+
     const releaseDate = release ? validDate(release) : new Date();
 
     if (
       ![title, singer, composer, genre].every((v) => validText(v, true)) ||
-      !albumId ||
+      (Albumalbum_id !== undefined &&
+        Albumalbum_id !== "" &&
+        albumId === null) ||
       !releaseDate ||
       validText(description) === null
     ) {
-      return res
-        .status(400)
-        .json({ message: "Thông tin bài hát không hợp lệ." });
+      return res.status(400).json({
+        message: "Thông tin bài hát không hợp lệ.",
+      });
     }
+
     if (!isMp3Buffer(req.file.buffer)) {
       return res.status(400).json({
         message: "Nội dung file không phải MP3 hợp lệ.",
       });
     }
 
-    const album = await prisma.album.findUnique({
-      where: { album_id: albumId },
-    });
-    if (!album) {
-      return res.status(400).json({ message: "Album không tồn tại." });
-    }
-    if (!canManage(album, req.user.user_id, req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "Bạn không có quyền thêm bài hát vào album này." });
+    if (albumId !== null) {
+      const album = await prisma.album.findUnique({
+        where: { album_id: albumId },
+      });
+
+      if (!album) {
+        return res.status(400).json({
+          message: "Album không tồn tại.",
+        });
+      }
+
+      if (!canManage(album, req.user.user_id, req.user.role)) {
+        return res.status(403).json({
+          message: "Bạn không có quyền thêm bài hát vào album này.",
+        });
+      }
     }
 
     uploadedFile = await uploadToCloudinary(req.file.buffer);
@@ -297,23 +313,30 @@ const updateSong = async (req, res, next) => {
     }
 
     if (req.body.Albumalbum_id !== undefined) {
-      const albumId = validId(req.body.Albumalbum_id);
-      if (!albumId) {
-        return res.status(400).json({ message: "Album không hợp lệ." });
-      }
+      const rawAlbumId = req.body.Albumalbum_id;
 
-      const album = await prisma.album.findUnique({
-        where: { album_id: albumId },
-      });
-      if (!album) {
-        return res.status(400).json({ message: "Album không tồn tại." });
+      if (rawAlbumId === "" || rawAlbumId === null) {
+        data.Albumalbum_id = null;
+      } else {
+        const albumId = validId(rawAlbumId);
+        if (!albumId) {
+          return res.status(400).json({ message: "Album không hợp lệ." });
+        }
+
+        const album = await prisma.album.findUnique({
+          where: { album_id: albumId },
+        });
+        if (!album) {
+          return res.status(400).json({ message: "Album không tồn tại." });
+        }
+
+        if (!canManage(album, req.user.user_id, req.user.role)) {
+          return res
+            .status(403)
+            .json({ message: "Bạn không có quyền sử dụng album này." });
+        }
+        data.Albumalbum_id = albumId;
       }
-      if (!canManage(album, req.user.user_id, req.user.role)) {
-        return res
-          .status(403)
-          .json({ message: "Bạn không có quyền sử dụng album này." });
-      }
-      data.Albumalbum_id = albumId;
     }
 
     // Nếu người dùng chọn file MP3 mới
