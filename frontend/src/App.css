@@ -342,9 +342,9 @@ body {
     color 0.2s ease;
 }
 
-/* ==============================
+/* =========================================
    LIBRARY PAGE
-============================== */
+========================================= */
 
 .library-page {
   width: 100%;
@@ -352,28 +352,27 @@ body {
 }
 
 .library-header {
-  margin-bottom: 24px;
+  margin-bottom: 25px;
 }
 
 .library-eyebrow {
   display: block;
   margin-bottom: 9px;
   color: var(--music-primary);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 1.8px;
+  letter-spacing: 1.7px;
 }
 
-.library-header h1,
-.feature-placeholder h1 {
+.library-header h1 {
   margin: 0 0 8px;
   color: var(--music-text);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 800;
+  line-height: 1.3;
 }
 
-.library-header p,
-.feature-placeholder p {
+.library-header p {
   margin: 0;
   color: var(--music-muted);
   font-size: 12px;
@@ -385,15 +384,19 @@ body {
 .library-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   margin-bottom: 25px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--music-border);
+  padding: 5px;
+  border: 1px solid var(--music-border);
+  border-radius: 11px;
+  background: var(--music-surface);
+  box-shadow: var(--music-shadow);
 }
 
 .library-tab {
-  min-width: 90px;
-  padding: 11px 17px;
+  min-width: 105px;
+  min-height: 38px;
+  padding: 9px 18px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -404,7 +407,8 @@ body {
   cursor: pointer;
   transition:
     color 0.2s ease,
-    background-color 0.2s ease;
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .library-tab:hover {
@@ -415,7 +419,12 @@ body {
 .library-tab.active {
   background: var(--music-soft);
   color: var(--music-primary);
-  font-weight: 700;
+  font-weight: 800;
+}
+
+.library-tab:focus-visible {
+  outline: 2px solid var(--music-primary);
+  outline-offset: 2px;
 }
 
 .library-content {
@@ -423,46 +432,45 @@ body {
   min-width: 0;
 }
 
-/* Placeholder for future features */
-
-.feature-placeholder {
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 30px;
-  border: 1px solid var(--music-border);
-  border-radius: 14px;
-  background: var(--music-surface);
-  box-shadow: var(--music-shadow);
+.library-content > * {
+  min-width: 0;
 }
 
-.feature-placeholder h1 {
-  margin-top: 5px;
+/* Search area inside library */
+
+.library-content .page-search {
+  margin-bottom: 24px;
+}
+
+.library-content .page-search input {
+  min-height: 42px;
+  border-color: var(--music-border);
+  border-radius: 9px;
+  background: var(--music-input-bg);
+  color: var(--music-text);
+}
+
+.library-content .page-search input::placeholder {
+  color: var(--music-muted);
 }
 
 /* Responsive */
 
 @media (max-width: 600px) {
-  .library-header h1,
-  .feature-placeholder h1 {
-    font-size: 21px;
+  .library-header h1 {
+    font-size: 22px;
   }
 
   .library-tabs {
     gap: 4px;
     overflow-x: auto;
+    scrollbar-width: thin;
   }
 
   .library-tab {
-    min-width: 75px;
-    padding: 10px 12px;
+    min-width: 85px;
+    padding: 9px 12px;
     font-size: 11px;
-  }
-
-  .feature-placeholder {
-    min-height: 230px;
-    padding: 20px;
+    white-space: nowrap;
   }
 }

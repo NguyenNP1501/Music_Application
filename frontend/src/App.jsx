@@ -21,6 +21,7 @@ import "./components/layout/NotificationPanel.css";
 import "./pages/Homepage.css";
 import "./pages/ArtistsPage.css";
 import "./pages/AlbumsPage.css";
+import "./pages/SongsPage.css";
 
 import "./components/common/SongCard.css";
 import "./components/common/EmptyState.css";
