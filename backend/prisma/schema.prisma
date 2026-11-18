@@ -49,26 +49,27 @@ model Playlist {
 
 // 3. SONG
 model Song {
-  song_id     Int       @id @default(autoincrement()) @map("id")
-  title       String    @db.VarChar(255)
-  release     DateTime? @db.Date
-  audio_url   String    @db.VarChar(255) @map("audioFile")
-  description String?   @db.Text
-  genre       String?   @db.VarChar(255)
-  composer    String?   @db.VarChar(255)
-  singer      String    @db.VarChar(255) @map("artist")
-  lyrics      String?   @db.LongText
-  coverUrl    String?   @db.VarChar(255)
-  durationSec Int?
-  createdAt   DateTime  @default(now()) @db.Timestamp(0)
+  song_id         Int       @id @default(autoincrement()) @map("id")
+  title           String    @db.VarChar(255)
+  release         DateTime? @db.Date
+  audio_url       String    @db.VarChar(1000) @map("audioFile")
+  audio_public_id String?   @db.VarChar(255)
+  description     String?   @db.Text
+  genre           String?   @db.VarChar(255)
+  composer        String?   @db.VarChar(255)
+  singer          String    @db.VarChar(255) @map("artist")
+  lyrics          String?   @db.LongText
+  coverUrl        String?   @db.VarChar(255)
+  durationSec     Int?
+  createdAt       DateTime  @default(now()) @db.Timestamp(0)
 
-  Albumalbum_id Int? @map("albumId")
+  Albumalbum_id Int @map("albumId")
   Roomroom_id   Int?
-  Useruser_id   Int? @map("userId")
+  Useruser_id   Int @map("userId")
 
-  album         Album?          @relation(fields: [Albumalbum_id], references: [album_id], onDelete: SetNull, onUpdate: Cascade)
+  album         Album           @relation(fields: [Albumalbum_id], references: [album_id], onDelete: Cascade, onUpdate: Cascade)
   room          Room?           @relation(fields: [Roomroom_id], references: [room_id], onDelete: SetNull, onUpdate: Cascade)
-  user          User?           @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  user          User            @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   playlists     Playlist_Song[]
   notifications Notification[]
 }

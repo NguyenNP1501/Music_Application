@@ -244,6 +244,8 @@ export default function AdminPage() {
 
   function startEditSong(song) {
     setEditingSongId(song.song_id);
+    setSongFile(null);
+
     setSongForm({
       title: song.title || "",
       singer: song.singer || "",
@@ -256,6 +258,7 @@ export default function AdminPage() {
         : "",
       description: song.description || "",
     });
+
     setShowSongForm(true);
     setError("");
     setMessage("");
@@ -269,18 +272,34 @@ export default function AdminPage() {
 
     try {
       const { audio_url, ...songData } = songForm;
-      await apiRequest(`/songs/${editingSongId}`, {
+      let body = {
+        ...songData,
+        Albumalbum_id: Number(songForm.Albumalbum_id),
+      };
+
+      // Nếu có chọn file mới, gửi multipart/form-data
+      if (songFile) {
+        const formData = new FormData();
+        Object.entries(body).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        formData.append("audio", songFile);
+        body = formData;
+      }
+      const result = await apiRequest(`/songs/${editingSongId}`, {
         method: "PATCH",
-        body: {
-          ...songData,
-          Albumalbum_id: Number(songForm.Albumalbum_id),
-        },
+        body,
       });
 
       setSongForm(emptySong);
+      setSongFile(null);
       setEditingSongId(null);
       setShowSongForm(false);
-      setMessage("Đã cập nhật bài hát.");
+      setMessage(
+        result.cleanup_pending
+          ? "Đã cập nhật bài hát, nhưng file nhạc cũ cần được dọn dẹp trên Cloudinary."
+          : "Đã cập nhật bài hát thành công.",
+      );
       await loadSongs(keyword, 1);
     } catch (err) {
       setError(err.message);
@@ -298,10 +317,14 @@ export default function AdminPage() {
       return;
 
     try {
-      setError("");
-      setMessage("");
-      await apiRequest(`/songs/${song.song_id}`, { method: "DELETE" });
-      setMessage("Đã xóa bài hát.");
+      const result = await apiRequest(`/songs/${song.song_id}`, {
+        method: "DELETE",
+      });
+      setMessage(
+        result.cleanup_pending
+          ? "Đã xóa bài hát khỏi hệ thống, nhưng file Cloudinary cần được dọn dẹp."
+          : "Đã xóa bài hát và file lưu trữ.",
+      );
       await reloadSongsAfterDelete();
     } catch (err) {
       setError(err.message);
@@ -524,19 +547,22 @@ export default function AdminPage() {
                 required
               />
             </label>
-            {!editingSongId && (
-              <label className="admin-form-wide">
-                File nhạc MP3 *
-                <input
-                  type="file"
-                  accept=".mp3,audio/mpeg"
-                  onChange={(e) => setSongFile(e.target.files?.[0] || null)}
-                  required
-                />
-                <small>Chỉ chấp nhận file MP3, dung lượng tối đa 20 MB.</small>
-                {songFile && <small>Đã chọn: {songFile.name}</small>}
-              </label>
-            )}
+            <label className="admin-form-wide">
+              File nhạc MP3 {editingSongId ? "(không bắt buộc)" : "*"}
+              <input
+                type="file"
+                accept=".mp3,audio/mpeg"
+                onChange={(e) => setSongFile(e.target.files?.[0] || null)}
+                required={!editingSongId}
+              />
+              <small>Chỉ chấp nhận file MP3, dung lượng tối đa 20 MB.</small>
+              {songFile && <small>Đã chọn: {songFile.name}</small>}
+              {editingSongId && (
+                <small>
+                  Không chọn file mới nếu bạn chỉ muốn sửa thông tin bài hát.
+                </small>
+              )}
+            </label>
             <label>
               Album *
               <select
