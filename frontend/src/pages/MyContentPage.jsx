@@ -3,6 +3,8 @@ import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
 import PageTitles from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
+import { showToast } from "../utils/toast";
+
 import "./MyContentPage.css";
 
 async function loadAllPages(endpoint, key) {
@@ -21,14 +23,6 @@ async function loadAllPages(endpoint, key) {
 function formatDate(value) {
   if (!value) return "Chưa cập nhật";
   return new Date(value).toLocaleDateString("vi-VN");
-}
-
-function notify(message, type = "success") {
-  window.dispatchEvent(
-    new CustomEvent("music-toast", {
-      detail: { message, type },
-    }),
-  );
 }
 
 export default function MyContentPage() {
@@ -59,7 +53,7 @@ export default function MyContentPage() {
         allAlbums.filter((album) => album.Useruser_id === user.user_id),
       );
     } catch (error) {
-      notify(error.message || "Không thể tải nội dung.", "error");
+      showToast(error.message || "Không thể tải nội dung.", "error");
     } finally {
       setLoading(false);
     }
@@ -99,32 +93,24 @@ export default function MyContentPage() {
 
     try {
       setDeleting(true);
-
       if (type === "song") {
         const result = await apiRequest(`/songs/${id}`, {
           method: "DELETE",
         });
-
         setSongs((old) => old.filter((song) => song.song_id !== id));
-
-        notify(
+        showToast(
           result.cleanup_pending
             ? "Đã xóa bài hát. File lưu trữ cần được kiểm tra thêm."
             : "Đã xóa bài hát thành công.",
         );
       } else {
-        await apiRequest(`/albums/${id}`, {
-          method: "DELETE",
-        });
-
+        await apiRequest(`/albums/${id}`, { method: "DELETE" });
         setAlbums((old) => old.filter((album) => album.album_id !== id));
-
-        notify("Đã xóa album thành công.");
+        showToast("Đã xóa album thành công.");
       }
-
       setConfirm(null);
     } catch (error) {
-      notify(error.message || "Không thể thực hiện thao tác.", "error");
+      showToast(error.message || "Không thể thực hiện thao tác.", "error");
     } finally {
       setDeleting(false);
     }
