@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,7 +18,7 @@ model User {
   created_at  DateTime @default(now()) @db.Timestamp(0)
   nickname    String?  @db.VarChar(255)
 
-  // Phần mở rộng phục vụ phân quyền của ứng dụng
+  // Phần mở rộng phục vụ phân quyền
   role String @default("user") @db.VarChar(20)
 
   playlists        Playlist[]
@@ -42,32 +43,28 @@ model Playlist {
   created_at      DateTime  @default(now()) @db.Timestamp(0)
   updated_at      DateTime? @db.Timestamp(0)
 
-  Useruser_id Int       @map("userId")
+  Useruser_id Int
   user        User            @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   songs       Playlist_Song[]
 }
 
 // 3. SONG
 model Song {
-  song_id         Int       @id @default(autoincrement()) @map("id")
+  song_id         Int       @id @default(autoincrement())
   title           String    @db.VarChar(255)
-  release         DateTime? @db.Date
-  audio_url       String    @db.VarChar(1000) @map("audioFile")
+  release         DateTime  @db.Timestamp(0)
+  audio_url       String    @db.VarChar(255)
   audio_public_id String?   @db.VarChar(255)
-  description     String?   @db.Text
-  genre           String?   @db.VarChar(255)
-  composer        String?   @db.VarChar(255)
-  singer          String    @db.VarChar(255) @map("artist")
-  lyrics          String?   @db.LongText
-  coverUrl        String?   @db.VarChar(255)
-  durationSec     Int?
-  createdAt       DateTime  @default(now()) @db.Timestamp(0)
+  description     String?   @db.VarChar(255)
+  genre           String    @db.VarChar(255)
+  composer        String    @db.VarChar(255)
+  singer          String    @db.VarChar(255)
 
-  Albumalbum_id Int @map("albumId")
+  Albumalbum_id Int?
   Roomroom_id   Int?
-  Useruser_id   Int @map("userId")
+  Useruser_id   Int
 
-  album         Album           @relation(fields: [Albumalbum_id], references: [album_id], onDelete: Cascade, onUpdate: Cascade)
+  album         Album?          @relation(fields: [Albumalbum_id], references: [album_id], onDelete: SetNull, onUpdate: Cascade)
   room          Room?           @relation(fields: [Roomroom_id], references: [room_id], onDelete: SetNull, onUpdate: Cascade)
   user          User            @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   playlists     Playlist_Song[]
@@ -82,9 +79,8 @@ model Album {
   cover_image_url String?  @db.VarChar(255)
   description     String?  @db.VarChar(255)
 
-  Useruser_id Int       @map("userId")
-
-  user          User           @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  Useruser_id Int
+  user        User           @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   songs         Song[]
   notifications Notification[]
 }
@@ -96,7 +92,7 @@ model Message {
   created_at  DateTime @default(now()) @db.Timestamp(0)
   sender_id   Int
   receiver_id Int?
-  Roomroom_id Int      @map("roomId")
+  Roomroom_id Int
 
   sender   User  @relation("MessageSender", fields: [sender_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   receiver User? @relation("MessageReceiver", fields: [receiver_id], references: [user_id], onDelete: SetNull, onUpdate: Cascade)
@@ -105,8 +101,8 @@ model Message {
 
 // 6. PLAYLIST_SONG
 model Playlist_Song {
-  Playlistplaylist_id Int      @map("playlistId")
-  Songsong_id         Int      @map("songId")
+  Playlistplaylist_id Int
+  Songsong_id         Int
   added_at            DateTime @default(now()) @db.Timestamp(0)
 
   playlist Playlist @relation(fields: [Playlistplaylist_id], references: [playlist_id], onDelete: Cascade, onUpdate: Cascade)
@@ -130,8 +126,8 @@ model Room {
 
 // 8. USER_ROOM
 model User_Room {
-  Useruser_id Int      @map("userId")
-  Roomroom_id Int      @map("roomId")
+  Useruser_id Int
+  Roomroom_id Int
   jointed_at  DateTime @default(now()) @db.Timestamp(0)
   role        String?  @db.VarChar(255)
 
@@ -148,9 +144,9 @@ model Notification {
   created_at      DateTime @default(now()) @db.Timestamp(0)
   is_read         Boolean
 
-  Useruser_id   Int  @map("userId")
-  Albumalbum_id Int? @map("albumId")
-  Songsong_id   Int? @map("songId")
+  Useruser_id   Int
+  Albumalbum_id Int?
+  Songsong_id   Int?
 
   user  User   @relation(fields: [Useruser_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   album Album? @relation(fields: [Albumalbum_id], references: [album_id], onDelete: SetNull, onUpdate: Cascade)
