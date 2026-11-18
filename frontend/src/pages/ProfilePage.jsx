@@ -4,7 +4,7 @@ import { apiRequest } from "../services/api";
 import PageTitles from "../components/common/PageTitles";
 import "./ProfilePage.css";
 
-export default function ProfilePage() {
+export default function ProfilePage({ theme, onThemeChange }) {
   const { user, updateUser, logout } = useAuth();
   const [form, setForm] = useState({
     full_name: "",
@@ -147,6 +147,61 @@ export default function ProfilePage() {
           <span>Người theo dõi</span>
         </div>
       </div>
+
+      <section className="profile-theme-settings">
+        <div className="profile-theme-info">
+          <div className="profile-theme-icon">
+            {theme === "dark" ? "☾" : "☀"}
+          </div>
+
+          <div>
+            <h3>Giao diện</h3>
+            <p>Tùy chỉnh chế độ hiển thị cho toàn bộ Music Space.</p>
+          </div>
+        </div>
+
+        <div className="profile-theme-options">
+          <button
+            type="button"
+            className={`profile-theme-option ${
+              theme === "light" ? "active" : ""
+            }`}
+            onClick={() => onThemeChange("light")}
+            aria-pressed={theme === "light"}
+          >
+            <span className="theme-preview light-preview">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>
+              <strong>Light Mode</strong>
+              <small>Giao diện sáng</small>
+            </span>
+            {theme === "light" && <span className="theme-check">✓</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`profile-theme-option ${
+              theme === "dark" ? "active" : ""
+            }`}
+            onClick={() => onThemeChange("dark")}
+            aria-pressed={theme === "dark"}
+          >
+            <span className="theme-preview dark-preview">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>
+              <strong>Dark Mode</strong>
+              <small>Giao diện tối</small>
+            </span>
+            {theme === "dark" && <span className="theme-check">✓</span>}
+          </button>
+        </div>
+      </section>
 
       <form className="profile-form" onSubmit={save}>
         <h3>Thông tin tài khoản</h3>

@@ -30,9 +30,9 @@ const emptyAlbum = {
   description: "",
 };
 
-export default function AdminPage() {
+export default function AdminPage({ mode = "manage" }) {
   const { user } = useAuth();
-  const [tab, setTab] = useState("users");
+  const [tab, setTab] = useState(mode === "create" ? "songs" : "users");
   const [users, setUsers] = useState([]);
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
@@ -434,59 +434,119 @@ export default function AdminPage() {
   return (
     <div className="admin-page">
       <PageTitles
-        eyebrow="SYSTEM MANAGEMENT"
-        title="Quản trị hệ thống"
-        description="Quản lý tài khoản người dùng và thư viện âm nhạc."
+        eyebrow={mode === "create" ? "CONTENT CREATION" : "SYSTEM MANAGEMENT"}
+        title={mode === "create" ? "Tạo nội dung mới" : "Quản trị hệ thống"}
+        description={
+          mode === "create"
+            ? "Thêm bài hát và album mới vào thư viện Music Space."
+            : "Quản lý tài khoản người dùng và thư viện âm nhạc."
+        }
       />
 
-      <div className="admin-overview">
-        <div>
-          <span>Tài khoản</span>
-          <strong>{users.length}</strong>
+      {mode !== "create" && (
+        <div className="admin-overview">
+          <div>
+            <span>Tài khoản</span>
+            <strong>{users.length}</strong>
+          </div>
+          <div>
+            <span>Bài hát</span>
+            <strong>{songTotal}</strong>
+          </div>
+          <div>
+            <span>Album</span>
+            <strong>{albumTotal}</strong>
+          </div>
         </div>
-        <div>
-          <span>Bài hát</span>
-          <strong>{songTotal}</strong>
-        </div>
-        <div>
-          <span>Album</span>
-          <strong>{albumTotal}</strong>
-        </div>
-      </div>
+      )}
 
-      <div className="admin-toolbar">
-        <div className="admin-tabs">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              className={tab === item.id ? "active" : ""}
-              onClick={() => changeTab(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      {mode !== "create" && (
+        <div className="admin-toolbar">
+          <div className="admin-tabs">
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                className={tab === item.id ? "active" : ""}
+                onClick={() => changeTab(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
 
-        <form className="admin-search" onSubmit={search}>
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder={
-              tab === "users"
-                ? "Tìm theo tên hoặc email..."
-                : tab === "songs"
-                  ? "Tìm bài hát, ca sĩ..."
-                  : "Tìm album..."
-            }
-          />
-          <button type="submit">Tìm kiếm</button>
-        </form>
-      </div>
+          <form className="admin-search" onSubmit={search}>
+            <input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder={
+                tab === "users"
+                  ? "Tìm theo tên hoặc email..."
+                  : tab === "songs"
+                    ? "Tìm bài hát, ca sĩ..."
+                    : "Tìm album..."
+              }
+            />
+            <button type="submit">Tìm kiếm</button>
+          </form>
+        </div>
+      )}
 
       {error && <p className="admin-alert error">{error}</p>}
       {message && <p className="admin-alert success">{message}</p>}
 
-      {tab === "songs" && (
+      {mode === "create" && (
+        <div className="create-content-options">
+          <button
+            type="button"
+            className={tab === "songs" ? "active" : ""}
+            onClick={() => {
+              setTab("songs");
+              setShowSongForm(true);
+              setShowAlbumForm(false);
+              setEditingSongId(null);
+              setEditingAlbumId(null);
+              setSongForm(emptySong);
+              setAlbumForm(emptyAlbum);
+              setSongFile(null);
+              setError("");
+              setMessage("");
+            }}
+          >
+            <span className="create-content-icon">♫</span>
+            <span>
+              <strong>Thêm bài hát mới</strong>
+              <small>Upload file MP3 và nhập thông tin bài hát.</small>
+            </span>
+            <span className="create-content-arrow">→</span>
+          </button>
+
+          <button
+            type="button"
+            className={tab === "albums" ? "active" : ""}
+            onClick={() => {
+              setTab("albums");
+              setShowAlbumForm(true);
+              setShowSongForm(false);
+              setEditingSongId(null);
+              setEditingAlbumId(null);
+              setSongForm(emptySong);
+              setAlbumForm(emptyAlbum);
+              setSongFile(null);
+              setError("");
+              setMessage("");
+            }}
+          >
+            <span className="create-content-icon">▣</span>
+            <span>
+              <strong>Thêm album mới</strong>
+              <small>Tạo album và bổ sung thông tin, ảnh bìa.</small>
+            </span>
+            <span className="create-content-arrow">→</span>
+          </button>
+        </div>
+      )}
+
+      {mode !== "create" && tab === "songs" && (
         <div className="admin-actions">
           <button onClick={() => setShowSongForm((v) => !v)}>
             {showSongForm ? "Đóng biểu mẫu" : "+ Thêm bài hát"}
@@ -494,7 +554,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {tab === "albums" && (
+      {mode !== "create" && tab === "albums" && (
         <div className="admin-actions">
           <button onClick={() => setShowAlbumForm((v) => !v)}>
             {showAlbumForm ? "Đóng biểu mẫu" : "+ Thêm album"}
@@ -711,165 +771,171 @@ export default function AdminPage() {
         </form>
       )}
 
-      <section className="admin-table-section">
-        {loading ? (
-          <p className="admin-loading">Đang tải dữ liệu...</p>
-        ) : tab === "users" ? (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Tài khoản</th>
-                <th>Email</th>
-                <th>Vai trò</th>
-                <th>Ngày tạo</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((target) => (
-                <tr key={target.user_id}>
-                  <td>{target.full_name}</td>
-                  <td>{target.email}</td>
-                  <td>
-                    <span className={`admin-role ${target.role}`}>
-                      {target.role === "admin" ? "Admin" : "User"}
-                    </span>
-                  </td>
-                  <td>
-                    {target.created_at
-                      ? new Date(target.created_at).toLocaleDateString("vi-VN")
-                      : "—"}
-                  </td>
-                  <td>
-                    {target.user_id !== user.user_id && (
-                      <div className="admin-row-actions">
-                        <button onClick={() => changeRole(target)}>
-                          Đổi quyền
-                        </button>
-                        <button
-                          className="delete"
-                          onClick={() => deleteUser(target)}
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : tab === "songs" ? (
-          <>
+      {mode !== "create" && (
+        <section className="admin-table-section">
+          {loading ? (
+            <p className="admin-loading">Đang tải dữ liệu...</p>
+          ) : tab === "users" ? (
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Bài hát</th>
-                  <th>Ca sĩ</th>
-                  <th>Thể loại</th>
-                  <th>Album ID</th>
+                  <th>Tài khoản</th>
+                  <th>Email</th>
+                  <th>Vai trò</th>
+                  <th>Ngày tạo</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {songs.map((song) => (
-                  <tr key={song.song_id}>
-                    <td>{song.title}</td>
-                    <td>{song.singer}</td>
-                    <td>{song.genre}</td>
-                    <td>{song.Albumalbum_id}</td>
+                {users.map((target) => (
+                  <tr key={target.user_id}>
+                    <td>{target.full_name}</td>
+                    <td>{target.email}</td>
                     <td>
-                      <div className="admin-row-actions">
-                        <button onClick={() => startEditSong(song)}>Sửa</button>
-                        <button
-                          className="delete"
-                          onClick={() => deleteSong(song)}
-                        >
-                          Xóa
-                        </button>
-                      </div>
+                      <span className={`admin-role ${target.role}`}>
+                        {target.role === "admin" ? "Admin" : "User"}
+                      </span>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pagination
-              page={songPage}
-              totalPages={songTotalPages}
-              onChange={async (nextPage) => {
-                setLoading(true);
-                try {
-                  await loadSongs(keyword, nextPage);
-                } catch (err) {
-                  setError(err.message);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Album</th>
-                  <th>Số bài hát</th>
-                  <th>Ngày phát hành</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {albums.map((album) => (
-                  <tr key={album.album_id}>
-                    <td>{album.title}</td>
-                    <td>{album.songs?.length || 0}</td>
                     <td>
-                      {album.release
-                        ? new Date(album.release).toLocaleDateString("vi-VN")
+                      {target.created_at
+                        ? new Date(target.created_at).toLocaleDateString(
+                            "vi-VN",
+                          )
                         : "—"}
                     </td>
                     <td>
-                      <div className="admin-row-actions">
-                        <button onClick={() => startEditAlbum(album)}>
-                          Sửa
-                        </button>
-                        <button
-                          className="delete"
-                          onClick={() => deleteAlbum(album)}
-                        >
-                          Xóa
-                        </button>
-                      </div>
+                      {target.user_id !== user.user_id && (
+                        <div className="admin-row-actions">
+                          <button onClick={() => changeRole(target)}>
+                            Đổi quyền
+                          </button>
+                          <button
+                            className="delete"
+                            onClick={() => deleteUser(target)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <Pagination
-              page={albumPage}
-              totalPages={albumTotalPages}
-              onChange={async (nextPage) => {
-                setLoading(true);
-                try {
-                  await loadAlbums(keyword, nextPage);
-                } catch (err) {
-                  setError(err.message);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            />
-          </>
-        )}
-
-        {!loading &&
-          ((tab === "users" && users.length === 0) ||
-            (tab === "songs" && songs.length === 0) ||
-            (tab === "albums" && albums.length === 0)) && (
-            <p className="admin-empty">Không có dữ liệu phù hợp.</p>
+          ) : tab === "songs" ? (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Bài hát</th>
+                    <th>Ca sĩ</th>
+                    <th>Thể loại</th>
+                    <th>Album ID</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {songs.map((song) => (
+                    <tr key={song.song_id}>
+                      <td>{song.title}</td>
+                      <td>{song.singer}</td>
+                      <td>{song.genre}</td>
+                      <td>{song.Albumalbum_id}</td>
+                      <td>
+                        <div className="admin-row-actions">
+                          <button onClick={() => startEditSong(song)}>
+                            Sửa
+                          </button>
+                          <button
+                            className="delete"
+                            onClick={() => deleteSong(song)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination
+                page={songPage}
+                totalPages={songTotalPages}
+                onChange={async (nextPage) => {
+                  setLoading(true);
+                  try {
+                    await loadSongs(keyword, nextPage);
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Album</th>
+                    <th>Số bài hát</th>
+                    <th>Ngày phát hành</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {albums.map((album) => (
+                    <tr key={album.album_id}>
+                      <td>{album.title}</td>
+                      <td>{album.songs?.length || 0}</td>
+                      <td>
+                        {album.release
+                          ? new Date(album.release).toLocaleDateString("vi-VN")
+                          : "—"}
+                      </td>
+                      <td>
+                        <div className="admin-row-actions">
+                          <button onClick={() => startEditAlbum(album)}>
+                            Sửa
+                          </button>
+                          <button
+                            className="delete"
+                            onClick={() => deleteAlbum(album)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination
+                page={albumPage}
+                totalPages={albumTotalPages}
+                onChange={async (nextPage) => {
+                  setLoading(true);
+                  try {
+                    await loadAlbums(keyword, nextPage);
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            </>
           )}
-      </section>
+
+          {!loading &&
+            ((tab === "users" && users.length === 0) ||
+              (tab === "songs" && songs.length === 0) ||
+              (tab === "albums" && albums.length === 0)) && (
+              <p className="admin-empty">Không có dữ liệu phù hợp.</p>
+            )}
+        </section>
+      )}
     </div>
   );
 }
