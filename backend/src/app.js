@@ -3,6 +3,7 @@ const cors = require("cors");
 const prisma = require("./config/prisma");
 const errorHandler = require("./middleware/errorHandler");
 
+const songRoutes = require("./routes/song.routes");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const catalogRoutes = require("./routes/catalogRoutes");
@@ -19,6 +20,7 @@ app.use(
     origin: process.env.CLIENT_ORIGIN
       ? process.env.CLIENT_ORIGIN.split(",").map((x) => x.trim())
       : true,
+    exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
   }),
 );
 
@@ -43,6 +45,7 @@ app.get("/api/health", async (req, res, next) => {
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/songs", songRoutes);
 app.use("/api", catalogRoutes);
 app.use("/api/playlists", playlistRoutes);
 app.use("/api/rooms", roomRoutes);

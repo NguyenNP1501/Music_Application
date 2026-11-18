@@ -2,12 +2,13 @@ import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import NotificationPanel from "./NotificationPanel";
+import { PlayerBar } from "../player/PlayerBar";
 
 export default function AppLayout({ page, navigate, children }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ paddingBottom: "80px" }}>
       <Sidebar page={page} navigate={navigate} />
 
       <div className="app-main">
@@ -22,6 +23,7 @@ export default function AppLayout({ page, navigate, children }) {
 
         <main className="page-content">{children}</main>
       </div>
+      <PlayerBar />
     </div>
   );
 }

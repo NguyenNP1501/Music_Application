@@ -1,11 +1,12 @@
-require("dotenv").config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET phải có ít nhất 32 ký tự trong file .env.");
 }
 
-const app = require("./app");
-const prisma = require("./config/prisma");
+const app = require('./app');
+const prisma = require('./config/prisma');
 
 const PORT = Number(process.env.PORT || 3000);
 
