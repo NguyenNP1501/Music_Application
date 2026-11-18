@@ -6,23 +6,29 @@
 
 .album-card {
   min-width: 0;
-  padding: 18px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 9px;
-  border: 1px solid #ece8f2;
+  border: 1px solid var(--music-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--music-surface);
+  transition: 0.2s ease;
+}
+
+.album-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--music-primary);
 }
 
 .album-card strong {
-  color: #302941;
+  color: var(--music-text);
   font-size: 13px;
 }
 
 .album-card span {
-  color: #9992a4;
+  color: var(--music-muted);
   font-size: 11px;
 }
 
@@ -33,7 +39,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: 11px;
-  background: #eee8ff;
+  background: linear-gradient(135deg, #eee8ff, #dcd0ff);
   color: #805ce0;
   font-size: 55px;
 }
@@ -46,7 +52,7 @@
 
 .album-card-large p {
   margin: 0;
-  color: #898297;
+  color: var(--music-muted);
   font-size: 11px;
   line-height: 1.6;
 }
@@ -67,24 +73,4 @@
   .album-grid {
     grid-template-columns: 1fr;
   }
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin: 28px 0;
-}
-
-.pagination button {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.pagination button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }

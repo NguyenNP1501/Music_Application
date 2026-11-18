@@ -11,6 +11,7 @@ import ScreeningRoomPage from "./pages/ScreeningRoomPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import MyContentPage from "./pages/MyContentPage";
+import LibraryPage from "./pages/LibraryPage";
 
 import "./App.css";
 import "./components/layout/AppLayout.css";
@@ -100,7 +101,7 @@ export default function App() {
   const pages = {
     home: <HomePage navigate={setPage} />,
 
-    library: <LibraryPage activeTab={libraryTab} onTabChange={setLibraryTab} />,
+    library: <LibraryPage onNavigate={setPage} />,
 
     songs: <SongsPage />,
     artists: <ArtistsPage />,
