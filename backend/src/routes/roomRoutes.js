@@ -3,6 +3,8 @@ const { requireAuth } = require("../middleware/auth");
 const roomController = require("../controllers/roomController");
 
 router.get("/", requireAuth, roomController.getRooms);
+router.get("/:id/members", requireAuth, roomController.getRoomMembers);
+
 router.post("/", requireAuth, roomController.createRoom);
 router.post("/:id/join", requireAuth, roomController.joinRoom);
 router.delete("/:id/leave", requireAuth, roomController.leaveRoom);

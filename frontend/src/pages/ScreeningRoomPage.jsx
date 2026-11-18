@@ -244,7 +244,8 @@ export default function ScreeningRoomPage() {
               />
 
               <RoomMembers
-                members={activeRoom.users || []}
+                roomId={activeRoom.room_id}
+                totalMembers={activeRoom._count?.users || 0}
                 currentUserId={user?.user_id}
                 creatorId={activeRoom.created_by}
               />

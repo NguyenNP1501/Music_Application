@@ -7,19 +7,107 @@ const getRooms = async (req, res, next) => {
   try {
     const rooms = await prisma.room.findMany({
       include: {
-        creator: { select: { user_id: true, full_name: true } },
-        users: {
-          include: {
-            user: {
-              select: { user_id: true, full_name: true, avatar_url: true },
-            },
+        creator: {
+          select: {
+            user_id: true,
+            full_name: true,
           },
         },
-        _count: { select: { users: true, messages: true } },
+        // Chỉ lấy thông tin thành viên hiện tại.
+        // Không tải toàn bộ danh sách thành viên của từng phòng.
+        users: {
+          where: {
+            Useruser_id: req.user.user_id,
+          },
+          select: {
+            Useruser_id: true,
+            Roomroom_id: true,
+            role: true,
+          },
+        },
+        _count: {
+          select: {
+            users: true,
+            messages: true,
+          },
+        },
       },
-      orderBy: { created_at: "desc" },
+      orderBy: {
+        created_at: "desc",
+      },
     });
+
     return res.json({ rooms });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getRoomMembers = async (req, res, next) => {
+  try {
+    const roomId = validId(req.params.id);
+    if (!roomId) {
+      return res.status(400).json({
+        message: "ID phòng không hợp lệ.",
+      });
+    }
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(1, Number.parseInt(req.query.limit, 10) || 20),
+    );
+    const search = String(req.query.search || "").trim();
+    // Chỉ thành viên của phòng mới được xem danh sách.
+    const currentMember = await prisma.user_Room.findUnique({
+      where: {
+        Useruser_id_Roomroom_id: {
+          Useruser_id: req.user.user_id,
+          Roomroom_id: roomId,
+        },
+      },
+    });
+    if (!currentMember) {
+      return res.status(403).json({ message: "Bạn chưa tham gia phòng." });
+    }
+
+    const where = {
+      Roomroom_id: roomId,
+      ...(search
+        ? {
+            user: {
+              full_name: {
+                contains: search,
+              },
+            },
+          }
+        : {}),
+    };
+    const total = await prisma.user_Room.count({ where });
+    const members = await prisma.user_Room.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        },
+      },
+      orderBy: [{ role: "asc" }, { jointed_at: "asc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return res.json({
+      members,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -221,6 +309,7 @@ const deleteRoom = async (req, res, next) => {
 
 module.exports = {
   getRooms,
+  getRoomMembers,
   createRoom,
   joinRoom,
   leaveRoom,
