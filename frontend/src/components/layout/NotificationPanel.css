@@ -7,10 +7,11 @@
   max-height: min(560px, calc(100vh - 100px));
   overflow: auto;
   padding: 17px;
-  border: 1px solid #ece8f2;
+  border: 1px solid var(--music-border);
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 16px 45px #30294120;
+  background: var(--music-surface);
+  color: var(--music-text);
+  box-shadow: var(--music-shadow);
 }
 
 .notification-heading {
@@ -18,17 +19,36 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
-  color: #302941;
+  color: var(--music-text);
   font-size: 14px;
 }
 
 .notification-heading button {
   width: 30px;
   height: 30px;
+  display: grid;
+  place-items: center;
   border: 0;
   border-radius: 8px;
-  background: #f5f2fa;
-  color: #7654d8;
+  background: var(--music-soft);
+  color: var(--music-primary);
+  cursor: pointer;
+}
+
+.notification-heading button:hover {
+  background: var(--music-hover);
+}
+
+.notification-panel .empty-state {
+  margin: 0;
+  padding: 24px 14px;
+  border: 1px solid var(--music-border);
+  border-radius: 12px;
+  background: var(--music-input-bg);
+  color: var(--music-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .notification-item {
@@ -38,18 +58,33 @@
   gap: 7px;
   padding: 13px 10px;
   border: 0;
-  border-bottom: 1px solid #f0edf4;
-  background: #fff;
+  border-bottom: 1px solid var(--music-border);
+  background: var(--music-surface);
+  color: var(--music-text);
   text-align: left;
-  color: #514a60;
   font-size: 12px;
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background: var(--music-hover);
 }
 
 .notification-item.unread {
-  background: #f8f5ff;
+  background: var(--music-soft);
 }
 
 .notification-item small {
-  color: #9992a4;
+  color: var(--music-muted);
   font-size: 10px;
+}
+
+.notification-panel .error-message {
+  background: #fff0f2;
+  color: #c63e54;
+}
+
+:root[data-theme="dark"] .notification-panel .error-message {
+  background: #432936;
+  color: #ff9aaa;
 }
