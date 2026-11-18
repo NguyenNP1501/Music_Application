@@ -7,7 +7,6 @@ import { showToast } from "../utils/toast";
 import "./ScreeningRoomPage.css";
 
 import RoomMusicPlayer from "../components/screening/RoomMusicPlayer";
-import RoomMembers from "../components/screening/RoomMembers";
 import RoomChat from "../components/screening/RoomChat";
 
 export default function ScreeningRoomPage() {
@@ -224,6 +223,10 @@ export default function ScreeningRoomPage() {
               <div className="screening-connection">
                 <span className="online-dot" />
                 Phòng công chiếu
+                <span className="screening-member-count">
+                  · {(activeRoom._count?.users || 0).toLocaleString("vi-VN")}{" "}
+                  người tham gia
+                </span>
               </div>
             </div>
 
@@ -242,13 +245,6 @@ export default function ScreeningRoomPage() {
                 song={activeRoom.song || null}
                 isOwner={isOwner}
               />
-
-              <RoomMembers
-                roomId={activeRoom.room_id}
-                totalMembers={activeRoom._count?.users || 0}
-                currentUserId={user?.user_id}
-                creatorId={activeRoom.created_by}
-              />
             </main>
 
             <RoomChat
@@ -258,6 +254,7 @@ export default function ScreeningRoomPage() {
               onSend={sendMessage}
               loading={loadingMessages}
               sending={sending}
+              currentUserId={user?.user_id}
             />
           </div>
         </>
