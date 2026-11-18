@@ -46,6 +46,9 @@ export default function HomePage({ navigate }) {
     };
   }, []);
 
+  const displayedSongs = songs.slice(0, 8);
+  const displayedAlbums = albums.slice(0, 3);
+
   return (
     <div className="home-page">
       <section className="home-hero">
@@ -103,11 +106,13 @@ export default function HomePage({ navigate }) {
         <div className="home-hero-art" aria-hidden="true">
           <div className="home-art-orbit home-art-orbit-one" />
           <div className="home-art-orbit home-art-orbit-two" />
+
           <div className="home-art-disc">
             <div className="home-art-disc-inner">
               <span>♫</span>
             </div>
           </div>
+
           <span className="home-art-note home-art-note-one">♪</span>
           <span className="home-art-note home-art-note-two">♫</span>
         </div>
@@ -141,9 +146,9 @@ export default function HomePage({ navigate }) {
             <span className="home-loading-spinner" />
             Đang tải danh sách bài hát...
           </div>
-        ) : songs.length > 0 ? (
-          <div className="song-grid">
-            {songs.slice(0, 8).map((song) => (
+        ) : displayedSongs.length > 0 ? (
+          <div className="song-grid home-song-grid">
+            {displayedSongs.map((song) => (
               <SongCard key={song.song_id || song.id} song={song} />
             ))}
           </div>
@@ -173,10 +178,13 @@ export default function HomePage({ navigate }) {
             <span className="home-loading-spinner" />
             Đang tải danh sách album...
           </div>
-        ) : albums.length > 0 ? (
+        ) : displayedAlbums.length > 0 ? (
           <div className="home-album-grid">
-            {albums.slice(0, 4).map((album) => (
-              <article className="home-album-card" key={album.album_id}>
+            {displayedAlbums.map((album) => (
+              <article
+                className="home-album-card"
+                key={album.album_id || album.id}
+              >
                 <div className="home-album-cover">
                   {album.cover_image_url ? (
                     <img
@@ -194,8 +202,15 @@ export default function HomePage({ navigate }) {
                 </div>
 
                 <div className="home-album-info">
-                  <strong title={album.title}>{album.title}</strong>
-                  <span>{album.songs?.length || 0} bài hát</span>
+                  <strong title={album.title}>
+                    {album.title || "Album chưa có tên"}
+                  </strong>
+                  <span>
+                    {Array.isArray(album.songs)
+                      ? album.songs.length
+                      : (album.song_count ?? 0)}{" "}
+                    bài hát
+                  </span>
                 </div>
               </article>
             ))}
