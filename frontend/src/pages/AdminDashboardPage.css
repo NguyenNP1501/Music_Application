@@ -429,3 +429,45 @@
     padding: 15px;
   }
 }
+
+.admin-album-cover,
+.admin-album-cover-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-album-cover-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--music-soft);
+  color: var(--music-primary);
+  font-size: 22px;
+}
+
+.admin-album-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.admin-album-info strong {
+  color: var(--music-text);
+  font-size: 11px;
+}
+
+.admin-album-info small {
+  color: var(--music-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.admin-row-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
