@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 import { useAuth } from "../services/context/AuthContext";
+import { usePlayer } from "../context/PlayerContext";
 import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 import "./PlaylistsPage.css";
@@ -8,7 +9,7 @@ import { showToast } from "../utils/toast";
 
 export default function PlaylistsPage() {
   const { user } = useAuth();
-
+  const { playSong } = usePlayer();
   const [playlists, setPlaylists] = useState([]);
   const [songs, setSongs] = useState([]);
   const [title, setTitle] = useState("");
@@ -429,7 +430,18 @@ export default function PlaylistsPage() {
                       if (!song) return null;
 
                       return (
-                        <div className="playlist-song-row" key={song.song_id}>
+                        <div
+                          className="playlist-song-row"
+                          key={song.song_id}
+                          style={{ cursor: "pointer" }}
+                          title="Bấm để phát bài hát này"
+                          onClick={() => {
+                            const playlistQueue = playlistSongs
+                              .map((i) => i.song)
+                              .filter(Boolean);
+                            playSong(song, playlistQueue);
+                          }}
+                        >
                           <div className="playlist-song-icon">♫</div>
 
                           <div className="playlist-song-info">
@@ -441,9 +453,10 @@ export default function PlaylistsPage() {
                             <button
                               type="button"
                               className="playlist-remove-song"
-                              onClick={() =>
-                                removeSong(playlist.playlist_id, song.song_id)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeSong(playlist.playlist_id, song.song_id);
+                              }}
                             >
                               Xóa
                             </button>

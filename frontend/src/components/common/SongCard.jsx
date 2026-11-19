@@ -3,7 +3,13 @@ import { useAuth } from "../../services/context/AuthContext";
 import { usePlayer } from "../../context/PlayerContext";
 import { showToast } from "../../utils/toast";
 
-export default function SongCard({ song, onAdd, onRemoveSaved, coverUrl }) {
+export default function SongCard({
+  song,
+  onAdd,
+  onRemoveSaved,
+  coverUrl,
+  playlist = null,
+}) {
   const { playSong } = usePlayer();
   const { user } = useAuth();
   const [saved, setSaved] = useState(false);
@@ -50,17 +56,20 @@ export default function SongCard({ song, onAdd, onRemoveSaved, coverUrl }) {
   }, [user?.user_id, song.song_id]);
 
   const cover =
-    coverUrl || song.album?.cover_image_url || song.cover_image_url || "";
+    coverUrl || song.album?.cover_image_url || song.cover_image_url || song.coverUrl || "";
 
   const handlePlay = () => {
     if (!song) return;
-    playSong({
-      id: song.song_id || song.id,
-      title: song.title,
-      artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
-      coverUrl: cover || song.coverUrl || "",
-      durationSec: song.durationSec || 0,
-    });
+    playSong(
+      {
+        id: song.song_id || song.id,
+        title: song.title,
+        artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
+        coverUrl: cover || "",
+        durationSec: song.durationSec || 0,
+      },
+      playlist
+    );
   };
 
   const toggleSaved = (event) => {

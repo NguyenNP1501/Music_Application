@@ -11,11 +11,28 @@ import { getStreamUrl } from "../api/songApi";
 
 const PlayerContext = createContext(null);
 
+export const normalizeSong = (song) => {
+  if (!song) return null;
+  const id = song.id || song.song_id;
+  if (!id) return null;
+  const title = song.title || "Không rõ tiêu đề";
+  const artist = song.artist || song.singer || "Chưa rõ nghệ sĩ";
+  const coverUrl =
+    song.coverUrl ||
+    song.cover_image_url ||
+    song.album?.cover_image_url ||
+    "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&h=100&fit=crop";
+  const durationSec = song.durationSec || 0;
+  return { id, song_id: id, title, artist, singer: artist, coverUrl, durationSec };
+};
+
 export const PlayerProvider = ({ children }) => {
   const { user } = useAuth();
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
+  const defaultQueueRef = useRef([]);
+
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -27,12 +44,41 @@ export const PlayerProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+
   const updateQueue = (items, index) => {
     queueRef.current = items;
     indexRef.current = index;
     setQueue(items);
     setCurrentIndex(index);
   };
+
+  // Tự động tải trước danh sách bài hát mặc định để hàng đợi luôn có đủ bài
+  useEffect(() => {
+    let isMounted = true;
+    async function initQueue() {
+      try {
+        const res = await fetch("http://localhost:3000/api/songs");
+        if (res.ok) {
+          const data = await res.json();
+          const raw = Array.isArray(data) ? data : (data?.songs || []);
+          const normalized = raw.map(normalizeSong).filter(Boolean);
+          if (isMounted && normalized.length > 0) {
+            defaultQueueRef.current = normalized;
+            if (queueRef.current.length === 0) {
+              queueRef.current = normalized;
+              setQueue(normalized);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Không thể tải danh sách bài hát mặc định:", err);
+      }
+    }
+    initQueue();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -42,28 +88,27 @@ export const PlayerProvider = ({ children }) => {
 
   const playSong = useCallback(
     async (song, newQueue = null) => {
-      if (!song?.id) return;
-      let items = queueRef.current;
-      let index = indexRef.current;
+      const normalizedSong = normalizeSong(song);
+      if (!normalizedSong?.id) return;
 
-      if (Array.isArray(newQueue)) {
-        items = newQueue;
-        index = items.findIndex((item) => item.id === song.id);
-        if (index < 0) {
-          items = [...items, song];
-          index = items.length - 1;
-        }
-      } else {
-        index = items.findIndex((item) => item.id === song.id);
-        if (index < 0) {
-          items = [...items, song];
-          index = items.length - 1;
-        }
+      let items = queueRef.current;
+
+      if (Array.isArray(newQueue) && newQueue.length > 0) {
+        items = newQueue.map(normalizeSong).filter(Boolean);
+      } else if (items.length <= 1 && defaultQueueRef.current.length > 0) {
+        items = [...defaultQueueRef.current];
+      }
+
+      let index = items.findIndex((item) => item.id === normalizedSong.id);
+      if (index < 0) {
+        items = [...items, normalizedSong];
+        index = items.length - 1;
       }
 
       updateQueue(items, index);
 
-      setCurrentSong(song);
+      setCurrentSong(normalizedSong);
+
       // Lưu lịch sử nghe theo tài khoản đang đăng nhập.
       const userId = user?.user_id;
       if (userId) {
@@ -71,15 +116,15 @@ export const PlayerProvider = ({ children }) => {
         try {
           const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
           const historySong = {
-            song_id: song.id,
-            title: song.title,
-            singer: song.artist,
-            cover_image_url: song.coverUrl || "",
+            song_id: normalizedSong.id,
+            title: normalizedSong.title,
+            singer: normalizedSong.artist,
+            cover_image_url: normalizedSong.coverUrl || "",
           };
           const nextHistory = [
             historySong,
             ...history.filter(
-              (item) => Number(item.song_id) !== Number(song.id),
+              (item) => Number(item.song_id) !== Number(normalizedSong.id),
             ),
           ].slice(0, 50);
           localStorage.setItem(historyKey, JSON.stringify(nextHistory));
@@ -88,6 +133,7 @@ export const PlayerProvider = ({ children }) => {
           console.error("Không thể lưu lịch sử nghe:", error);
         }
       }
+
       setCurrentTime(0);
       setDuration(0);
       setBufferedEnd(0);
@@ -96,7 +142,7 @@ export const PlayerProvider = ({ children }) => {
 
       const audio = audioRef.current;
       if (!audio) return;
-      audio.src = getStreamUrl(song.id);
+      audio.src = getStreamUrl(normalizedSong.id);
       audio.load();
 
       try {
@@ -120,7 +166,7 @@ export const PlayerProvider = ({ children }) => {
     if (!audio) return;
 
     if (!currentSong) {
-      const first = queueRef.current[0];
+      const first = queueRef.current[0] || defaultQueueRef.current[0];
       if (first) await playSong(first);
       return;
     }
@@ -141,28 +187,46 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
-  const next = async () => {
-    const items = queueRef.current;
-    if (items.length === 0) return;
-
-    const nextIndex = (indexRef.current + 1) % items.length;
-    await playSong(items[nextIndex]);
-  };
-
-  const prev = async () => {
-    const audio = audioRef.current;
-    if (!audio || queueRef.current.length === 0) return;
-
-    if (audio.currentTime > 3) {
-      audio.currentTime = 0;
-      setCurrentTime(0);
-      return;
+  const next = useCallback(async () => {
+    let items = queueRef.current;
+    if (items.length <= 1 && defaultQueueRef.current.length > 1) {
+      items = defaultQueueRef.current;
+      queueRef.current = items;
+      setQueue(items);
     }
+    if (!items || items.length === 0) return;
 
-    const items = queueRef.current;
-    const prevIndex = (indexRef.current - 1 + items.length) % items.length;
-    await playSong(items[prevIndex]);
-  };
+    let curIdx = indexRef.current;
+    if (curIdx < 0 || !items[curIdx] || items[curIdx].id !== currentSong?.id) {
+      curIdx = items.findIndex((s) => s.id === currentSong?.id);
+    }
+    if (curIdx < 0) curIdx = 0;
+
+    const nextIndex = (curIdx + 1) % items.length;
+    await playSong(items[nextIndex], items);
+  }, [currentSong, playSong]);
+
+  const prev = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let items = queueRef.current;
+    if (items.length <= 1 && defaultQueueRef.current.length > 1) {
+      items = defaultQueueRef.current;
+      queueRef.current = items;
+      setQueue(items);
+    }
+    if (!items || items.length === 0) return;
+
+    let curIdx = indexRef.current;
+    if (curIdx < 0 || !items[curIdx] || items[curIdx].id !== currentSong?.id) {
+      curIdx = items.findIndex((s) => s.id === currentSong?.id);
+    }
+    if (curIdx < 0) curIdx = 0;
+
+    const prevIndex = (curIdx - 1 + items.length) % items.length;
+    await playSong(items[prevIndex], items);
+  }, [currentSong, playSong]);
 
   const seek = (seconds) => {
     const audio = audioRef.current;
@@ -210,10 +274,7 @@ export const PlayerProvider = ({ children }) => {
 
   const handleEnded = () => {
     setIsPlaying(false);
-
-    if (queueRef.current.length > 1) {
-      next();
-    }
+    next();
   };
 
   const handleError = () => {

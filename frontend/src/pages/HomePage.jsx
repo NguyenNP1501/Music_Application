@@ -149,7 +149,11 @@ export default function HomePage({ navigate, onSelectAlbum }) {
         ) : displayedSongs.length > 0 ? (
           <div className="song-grid home-song-grid">
             {displayedSongs.map((song) => (
-              <SongCard key={song.song_id || song.id} song={song} />
+              <SongCard
+                key={song.song_id || song.id}
+                song={song}
+                playlist={displayedSongs}
+              />
             ))}
           </div>
         ) : (

@@ -69,7 +69,11 @@ export default function SongsPage() {
       ) : songs.length ? (
         <div className="song-grid">
           {songs.map((song) => (
-            <SongCard key={song.id || song.song_id} song={song} />
+            <SongCard
+              key={song.id || song.song_id}
+              song={song}
+              playlist={songs}
+            />
           ))}
         </div>
       ) : (
