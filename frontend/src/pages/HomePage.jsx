@@ -59,7 +59,11 @@ export default function HomePage({ navigate }) {
         ) : songs.length ? (
           <div className="song-grid">
             {songs.slice(0, 8).map((song) => (
-              <SongCard key={song.id || song.song_id} song={song} />
+              <SongCard
+                key={song.id || song.song_id}
+                song={song}
+                playlist={songs.slice(0, 8)}
+              />
             ))}
           </div>
         ) : (

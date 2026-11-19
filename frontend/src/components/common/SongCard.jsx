@@ -1,20 +1,23 @@
 import { usePlayer } from "../../context/PlayerContext";
 
-export default function SongCard({ song, onAdd }) {
+export default function SongCard({ song, onAdd, playlist = null }) {
   const { playSong } = usePlayer();
 
-  const cover = song.album?.cover_image_url || song.cover_image_url || "";
+  const cover = song.album?.cover_image_url || song.cover_image_url || song.coverUrl || "";
 
   const handlePlay = () => {
     if (!song) return;
 
-    playSong({
-      id: song.song_id,
-      title: song.title,
-      artist: song.singer || "Chưa rõ nghệ sĩ",
-      coverUrl: cover,
-      durationSec: song.durationSec || 0,
-    });
+    playSong(
+      {
+        id: song.song_id || song.id,
+        title: song.title,
+        artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
+        coverUrl: cover,
+        durationSec: song.durationSec || 0,
+      },
+      playlist
+    );
   };
 
   return (
