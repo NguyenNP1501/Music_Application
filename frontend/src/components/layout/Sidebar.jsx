@@ -2,11 +2,10 @@ import { useAuth } from "../../services/context/AuthContext";
 
 const menus = [
   { id: "home", icon: "⌂", label: "Trang chủ" },
-  { id: "songs", icon: "♫", label: "Bài hát" },
-  { id: "artists", icon: "♬", label: "Nghệ sĩ" },
-  { id: "albums", icon: "▣", label: "Album" },
-  { id: "playlists", icon: "▤", label: "Playlist" },
-  { id: "messages", icon: "✉", label: "Tin nhắn" },
+  { id: "library", icon: "▤", label: "Thư viện" },
+  { id: "playlists", icon: "♫", label: "Playlist" },
+  { id: "screening", icon: "◉", label: "Phòng công chiếu" },
+  { id: "my-content", icon: "▧", label: "Nội dung của tôi" },
 ];
 
 export default function Sidebar({ page, navigate }) {
@@ -16,7 +15,7 @@ export default function Sidebar({ page, navigate }) {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <span className="brand-icon">♫</span>
-        <span>Music Space</span>
+        <span className="brand-name">Music Space</span>
       </div>
 
       <p className="sidebar-label">MENU CHÍNH</p>
@@ -25,26 +24,39 @@ export default function Sidebar({ page, navigate }) {
         {menus.map((item) => (
           <button
             key={item.id}
+            type="button"
             className={`nav-item ${page === item.id ? "active" : ""}`}
             onClick={() => navigate(item.id)}
           >
             <span className="nav-icon">{item.icon}</span>
-            {item.label}
+            <span className="nav-text">{item.label}</span>
           </button>
         ))}
       </nav>
 
       {user?.role === "admin" && (
-        <>
+        <button
+          className={`nav-item ${page === "create" ? "active" : ""}`}
+          onClick={() => navigate("create")}
+        >
+          <span className="nav-icon">＋</span>
+          Tạo mới
+        </button>
+      )}
+
+      {user?.role === "admin" && (
+        <div className="sidebar-admin">
           <p className="sidebar-label">QUẢN LÝ</p>
+
           <button
+            type="button"
             className={`nav-item ${page === "admin" ? "active" : ""}`}
             onClick={() => navigate("admin")}
           >
             <span className="nav-icon">⚙</span>
-            Quản trị hệ thống
+            <span className="nav-text">Quản trị hệ thống</span>
           </button>
-        </>
+        </div>
       )}
 
       <div className="sidebar-bottom">

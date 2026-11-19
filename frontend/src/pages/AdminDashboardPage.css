@@ -1,0 +1,531 @@
+.admin-page {
+  width: 100%;
+  color: var(--music-text);
+}
+
+/* OVERVIEW */
+.admin-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 25px;
+}
+
+.admin-overview div {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--music-border);
+  border-radius: 13px;
+  background: var(--music-surface);
+  box-shadow: var(--music-shadow);
+}
+
+.admin-overview span {
+  color: var(--music-muted);
+  font-size: 11px;
+}
+
+.admin-overview strong {
+  color: var(--music-primary);
+  font-size: 25px;
+}
+
+/* TOOLBAR */
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--music-border);
+  border-radius: 10px;
+  background: var(--music-soft);
+}
+
+.admin-tabs button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--music-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-tabs button.active {
+  background: var(--music-surface);
+  color: var(--music-primary);
+  box-shadow: var(--music-shadow);
+}
+
+.admin-search {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-search input {
+  width: 230px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--music-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--music-input-bg);
+  color: var(--music-text);
+  font-size: 11px;
+}
+
+.admin-search input::placeholder {
+  color: var(--music-muted);
+}
+
+.admin-search input:focus {
+  border-color: var(--music-primary);
+}
+
+.admin-search button,
+.admin-actions button,
+.admin-submit {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--music-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-search button:hover,
+.admin-actions button:hover,
+.admin-submit:hover {
+  background: var(--music-primary-dark);
+}
+
+.admin-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 15px;
+}
+
+/* ALERTS */
+.admin-alert {
+  margin: 12px 0;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.admin-alert.error,
+.admin-error {
+  background: #fff0f1;
+  color: #c63e54;
+}
+
+.admin-alert.success {
+  background: #eaf8ef;
+  color: #27834b;
+}
+
+/* FORM */
+.admin-form {
+  margin-bottom: 22px;
+  padding: 22px;
+  border: 1px solid var(--music-border);
+  border-radius: 13px;
+  background: var(--music-surface);
+  box-shadow: var(--music-shadow);
+}
+
+.admin-form h3 {
+  margin: 0 0 18px;
+  color: var(--music-text);
+  font-size: 14px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.admin-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--music-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.admin-form-grid input,
+.admin-form-grid select,
+.admin-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--music-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--music-input-bg);
+  color: var(--music-text);
+  font-size: 11px;
+}
+
+.admin-form-grid input::placeholder,
+.admin-form-grid textarea::placeholder {
+  color: var(--music-muted);
+}
+
+.admin-form-grid textarea {
+  min-height: 75px;
+  resize: vertical;
+}
+
+.admin-form-grid input:focus,
+.admin-form-grid select:focus,
+.admin-form-grid textarea:focus {
+  border-color: var(--music-primary);
+}
+
+.admin-form-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-submit {
+  margin-top: 18px;
+}
+
+.admin-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-form-actions button {
+  margin-top: 0;
+}
+
+.admin-cancel {
+  padding: 10px 18px;
+  border: 1px solid var(--music-border);
+  border-radius: 8px;
+  background: var(--music-surface);
+  color: var(--music-text);
+  cursor: pointer;
+}
+
+.admin-cancel:hover {
+  background: var(--music-hover);
+}
+
+/* TABLE */
+.admin-table-section {
+  overflow-x: auto;
+  border: 1px solid var(--music-border);
+  border-radius: 13px;
+  background: var(--music-surface);
+  box-shadow: var(--music-shadow);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--music-border);
+  font-size: 11px;
+}
+
+.admin-table th {
+  background: var(--music-hover);
+  color: var(--music-muted);
+  font-weight: 700;
+}
+
+.admin-table td {
+  color: var(--music-text);
+}
+
+.admin-table tbody tr {
+  background: var(--music-surface);
+  transition: background 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--music-hover);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ROLE */
+.admin-role {
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-role.admin {
+  background: var(--music-soft);
+  color: var(--music-primary);
+}
+
+.admin-role.user {
+  background: var(--music-hover);
+  color: var(--music-muted);
+}
+
+/* ACTION BUTTONS */
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-row-actions button,
+.admin-delete {
+  padding: 7px 10px;
+  border: 1px solid var(--music-border);
+  border-radius: 7px;
+  background: var(--music-surface);
+  color: var(--music-primary);
+  font-size: 10px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-row-actions button:hover {
+  background: var(--music-hover);
+  border-color: var(--music-primary);
+}
+
+.admin-row-actions button.delete,
+.admin-delete {
+  border-color: #e9aeb8;
+  color: #d34c61;
+}
+
+.admin-row-actions button.delete:hover,
+.admin-delete:hover {
+  background: #fff0f1;
+}
+
+.admin-row-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* EMPTY / LOADING */
+.admin-empty,
+.admin-loading {
+  padding: 25px;
+  color: var(--music-muted);
+  text-align: center;
+  font-size: 12px;
+}
+
+.admin-error {
+  padding: 15px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+/* CREATE CONTENT */
+.create-content-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.create-content-options > button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 19px;
+  border: 1px solid var(--music-border);
+  border-radius: 13px;
+  background: var(--music-surface);
+  color: var(--music-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.create-content-options > button:hover,
+.create-content-options > button.active {
+  border-color: var(--music-primary);
+  background: var(--music-hover);
+}
+
+.create-content-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--music-soft);
+  color: var(--music-primary);
+  font-size: 23px;
+}
+
+.create-content-options > button > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-content-options strong {
+  color: var(--music-text);
+  font-size: 13px;
+}
+
+.create-content-options small {
+  color: var(--music-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.create-content-arrow {
+  color: var(--music-primary);
+  font-size: 20px;
+}
+
+/* ALBUM COVER */
+.admin-album-cover,
+.admin-album-cover-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-album-cover-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--music-soft);
+  color: var(--music-primary);
+  font-size: 22px;
+}
+
+.admin-album-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.admin-album-info strong {
+  color: var(--music-text);
+  font-size: 11px;
+}
+
+.admin-album-info small {
+  color: var(--music-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* PAGINATION */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid var(--music-border);
+  border-radius: 8px;
+  background: var(--music-surface);
+  color: var(--music-text);
+  cursor: pointer;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--music-primary);
+  color: var(--music-primary);
+}
+
+.pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* RESPONSIVE */
+@media (max-width: 850px) {
+  .admin-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-search input {
+    flex: 1;
+    width: auto;
+  }
+}
+
+@media (max-width: 650px) {
+  .create-content-options {
+    grid-template-columns: 1fr;
+  }
+
+  .create-content-options > button {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-wide {
+    grid-column: auto;
+  }
+
+  .admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-tabs button {
+    padding: 10px 5px;
+  }
+}

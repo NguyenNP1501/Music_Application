@@ -1,3 +1,4 @@
+const { getPagination } = require("../utils/catalogValidation");
 const prisma = require("../config/prisma");
 const {
   isObject,
@@ -61,22 +62,18 @@ const updateProfile = async (req, res, next) => {
     if (req.body.avatar_url !== undefined) {
       const value = normalizeAvatarUrl(req.body.avatar_url);
       if (!value.valid)
-        return res
-          .status(400)
-          .json({
-            message:
-              "Đường dẫn ảnh đại diện phải là URL HTTP/HTTPS hợp lệ và không quá 255 ký tự.",
-          });
+        return res.status(400).json({
+          message:
+            "Đường dẫn ảnh đại diện phải là URL HTTP/HTTPS hợp lệ và không quá 255 ký tự.",
+        });
       data.avatar_url = value.value;
     }
     if (req.body.dateOfBirth !== undefined) {
       const value = parseBirthDate(req.body.dateOfBirth);
       if (!value.valid)
-        return res
-          .status(400)
-          .json({
-            message: "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
-          });
+        return res.status(400).json({
+          message: "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
+        });
       data.dateOfBirth = value.value;
     }
 
@@ -107,25 +104,56 @@ const getUsers = async (req, res, next) => {
         .status(400)
         .json({ message: "Từ khóa tìm kiếm không hợp lệ." });
     }
-    const q = (req.query.q || "").trim();
-    if (q.length > 255)
-      return res.status(400).json({ message: "Từ khóa tìm kiếm quá dài." });
 
-    const users = await prisma.user.findMany({
-      where: q
-        ? { OR: [{ full_name: { contains: q } }, { email: { contains: q } }] }
-        : {},
-      select: {
-        user_id: true,
-        full_name: true,
-        email: true,
-        role: true,
-        created_at: true,
+    const q = (req.query.q || "").trim();
+
+    if (q.length > 255) {
+      return res.status(400).json({
+        message: "Từ khóa tìm kiếm quá dài.",
+      });
+    }
+
+    const pagination = getPagination(req.query);
+
+    if (!pagination) {
+      return res.status(400).json({
+        message: "Thông tin phân trang không hợp lệ.",
+      });
+    }
+
+    const where = q
+      ? {
+          OR: [{ full_name: { contains: q } }, { email: { contains: q } }],
+        }
+      : {};
+
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({
+        where,
+        select: {
+          user_id: true,
+          full_name: true,
+          email: true,
+          role: true,
+          created_at: true,
+        },
+        orderBy: [{ created_at: "desc" }, { user_id: "desc" }],
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+
+      prisma.user.count({ where }),
+    ]);
+
+    return res.json({
+      users,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
       },
-      orderBy: { created_at: "desc" },
-      take: 200,
     });
-    return res.json({ users });
   } catch (error) {
     next(error);
   }

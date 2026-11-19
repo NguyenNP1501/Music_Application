@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
       try {
         const data = await apiRequest("/auth/me");
         setUser(data.user);
+        localStorage.setItem("music-current-user", JSON.stringify(data.user));
       } catch {
         // Chỉ xóa token khi API trả về 401.
         // Lỗi 500 hoặc mất kết nối không được tự động đăng xuất.
@@ -37,6 +38,7 @@ export function AuthProvider({ children }) {
     });
     setToken(data.token);
     setUser(data.user);
+    localStorage.setItem("music-current-user", JSON.stringify(data.user));
     return data.user;
   }
 
@@ -47,6 +49,7 @@ export function AuthProvider({ children }) {
     });
     setToken(data.token);
     setUser(data.user);
+    localStorage.setItem("music-current-user", JSON.stringify(data.user));
     return data.user;
   }
 
@@ -56,12 +59,14 @@ export function AuthProvider({ children }) {
       body: data,
     });
     setUser(result.user);
+    localStorage.setItem("music-current-user", JSON.stringify(result.user));
     return result.user;
   }
 
   function logout() {
     clearToken();
     setUser(null);
+    localStorage.removeItem("music-current-user");
   }
 
   return (

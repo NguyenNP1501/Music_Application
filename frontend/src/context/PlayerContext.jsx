@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-
+import { useAuth } from "../services/context/AuthContext";
 import { getStreamUrl } from "../api/songApi";
 
 const PlayerContext = createContext(null);
@@ -27,6 +27,7 @@ export const normalizeSong = (song) => {
 };
 
 export const PlayerProvider = ({ children }) => {
+  const { user } = useAuth();
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
@@ -85,51 +86,80 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [volume, isMuted]);
 
-  const playSong = useCallback(async (song, newQueue = null) => {
-    const normalizedSong = normalizeSong(song);
-    if (!normalizedSong?.id) return;
+  const playSong = useCallback(
+    async (song, newQueue = null) => {
+      const normalizedSong = normalizeSong(song);
+      if (!normalizedSong?.id) return;
 
-    let items = queueRef.current;
+      let items = queueRef.current;
 
-    if (Array.isArray(newQueue) && newQueue.length > 0) {
-      items = newQueue.map(normalizeSong).filter(Boolean);
-    } else if (items.length <= 1 && defaultQueueRef.current.length > 0) {
-      items = [...defaultQueueRef.current];
-    }
-
-    let index = items.findIndex((item) => item.id === normalizedSong.id);
-    if (index < 0) {
-      items = [...items, normalizedSong];
-      index = items.length - 1;
-    }
-
-    updateQueue(items, index);
-
-    setCurrentSong(normalizedSong);
-    setCurrentTime(0);
-    setDuration(0);
-    setBufferedEnd(0);
-    setError(null);
-    setIsBuffering(true);
-
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.src = getStreamUrl(normalizedSong.id);
-    audio.load();
-
-    try {
-      await audio.play();
-      setIsPlaying(true);
-    } catch (err) {
-      setIsPlaying(false);
-      setIsBuffering(false);
-      if (err.name === "NotAllowedError") {
-        setError("Trình duyệt chặn tự động phát. Hãy bấm Play để nghe nhạc.");
-      } else {
-        setError(`Không thể phát nhạc: ${err.message}`);
+      if (Array.isArray(newQueue) && newQueue.length > 0) {
+        items = newQueue.map(normalizeSong).filter(Boolean);
+      } else if (items.length <= 1 && defaultQueueRef.current.length > 0) {
+        items = [...defaultQueueRef.current];
       }
-    }
-  }, []);
+
+      let index = items.findIndex((item) => item.id === normalizedSong.id);
+      if (index < 0) {
+        items = [...items, normalizedSong];
+        index = items.length - 1;
+      }
+
+      updateQueue(items, index);
+
+      setCurrentSong(normalizedSong);
+
+      // Lưu lịch sử nghe theo tài khoản đang đăng nhập.
+      const userId = user?.user_id;
+      if (userId) {
+        const historyKey = `music-space-recent-${userId}`;
+        try {
+          const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
+          const historySong = {
+            song_id: normalizedSong.id,
+            title: normalizedSong.title,
+            singer: normalizedSong.artist,
+            cover_image_url: normalizedSong.coverUrl || "",
+          };
+          const nextHistory = [
+            historySong,
+            ...history.filter(
+              (item) => Number(item.song_id) !== Number(normalizedSong.id),
+            ),
+          ].slice(0, 50);
+          localStorage.setItem(historyKey, JSON.stringify(nextHistory));
+          window.dispatchEvent(new Event("music-recent-change"));
+        } catch (error) {
+          console.error("Không thể lưu lịch sử nghe:", error);
+        }
+      }
+
+      setCurrentTime(0);
+      setDuration(0);
+      setBufferedEnd(0);
+      setError(null);
+      setIsBuffering(true);
+
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.src = getStreamUrl(normalizedSong.id);
+      audio.load();
+
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (err) {
+        setIsPlaying(false);
+        setIsBuffering(false);
+        if (err.name === "NotAllowedError") {
+          setError("Trình duyệt chặn tự động phát. Hãy bấm Play để nghe nhạc.");
+        } else {
+          setError(`Không thể phát nhạc: ${err.message}`);
+        }
+      }
+    },
+    [user?.user_id],
+  );
 
   const togglePlay = async () => {
     const audio = audioRef.current;
