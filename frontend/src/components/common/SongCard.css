@@ -1,96 +1,139 @@
+/* ==========================================================================
+   SONG ROW / CARD (Figma Component "Thẻ / Bài hát" Frame 6:46)
+   ========================================================================== */
+
 .song-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 17px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.song-card {
-  min-width: 0;
+.figma-song-row {
+  height: 72px;
   display: flex;
-  gap: 13px;
-  padding: 13px;
-  border: 1px solid var(--music-border);
-  border-radius: 13px;
-  background: var(--music-surface);
-  color: var(--music-text);
-  box-shadow: var(--music-shadow);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.song-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--music-primary);
-  box-shadow: 0 8px 22px rgba(35, 25, 60, 0.09);
-}
-
-.song-cover {
-  width: 76px;
-  height: 76px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--music-card, #191b23);
+  border: 1px solid var(--music-line, #30323f);
   border-radius: 10px;
-  background: linear-gradient(135deg, #eee8ff, #dcd0ff);
-  color: #7654d8;
-  font-size: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.song-cover img {
+.figma-song-row:hover {
+  background: var(--music-card-alt, #20222d);
+  border-color: var(--music-primary, #ac91ff);
+  transform: translateY(-1px);
+}
+
+/* Cover (52px x 52px) */
+.song-row-cover {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: var(--music-panel, #14151c);
+}
+
+.song-row-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.song-info {
+.song-row-play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 17, 22, 0.65);
+  display: grid;
+  place-items: center;
+  color: var(--music-primary, #ac91ff);
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.figma-song-row:hover .song-row-play-overlay {
+  opacity: 1;
+}
+
+/* Meta */
+.song-row-meta {
   min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
-.song-info strong,
-.song-info span,
-.song-info small {
-  max-width: 100%;
+.song-row-title {
+  color: var(--music-text, #f6f5fb);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
-.song-info strong {
-  color: var(--music-text);
+.song-row-artist {
+  color: var(--music-muted, #a4a6b7);
   font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
-.song-info span,
-.song-info small {
-  color: var(--music-muted);
-  font-size: 10px;
+/* Extra / Duration & Actions */
+.song-row-extra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-.song-info .text-button {
-  font-size: 10px;
+.song-row-duration {
+  color: var(--music-muted, #a4a6b7);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
-:root[data-theme="dark"] .song-cover {
-  background: linear-gradient(135deg, #39304f, #292238);
-  color: #b99fff;
+.song-row-action-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--music-muted, #a4a6b7);
+  font-size: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
-@media (max-width: 1050px) {
-  .song-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.song-row-action-btn:hover {
+  background: var(--music-hover, #2b2540);
+  color: var(--music-primary, #ac91ff);
 }
 
-@media (max-width: 520px) {
+.song-row-action-btn.saved {
+  color: var(--music-red, #ff9daa);
+}
+
+.song-row-action-btn.danger:hover {
+  color: var(--music-red, #ff9daa);
+}
+
+@media (max-width: 860px) {
   .song-grid {
     grid-template-columns: 1fr;
   }

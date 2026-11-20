@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import NotificationPanel from "./NotificationPanel";
 import { PlayerBar } from "../player/PlayerBar";
+import { usePlayer } from "../../context/PlayerContext";
 
 export default function AppLayout({
   page,
@@ -13,6 +14,14 @@ export default function AppLayout({
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState(null);
+  const { currentSong } = usePlayer() || {};
+  const mainRef = useRef(null);
+
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [page]);
 
   useEffect(() => {
     function handleToast(event) {
@@ -37,10 +46,10 @@ export default function AppLayout({
   }, [toast]);
 
   return (
-    <div className="app-shell" style={{ paddingBottom: "80px" }}>
+    <div className={`app-shell ${currentSong ? "has-player" : ""}`}>
       <Sidebar page={page} navigate={navigate} />
 
-      <div className="app-main">
+      <div className="app-main" ref={mainRef}>
         <Header
           navigate={navigate}
           onNotifications={() => setShowNotifications((v) => !v)}

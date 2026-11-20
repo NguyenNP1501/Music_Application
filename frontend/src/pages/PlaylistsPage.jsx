@@ -6,6 +6,7 @@ import PageTitle from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 import "./PlaylistsPage.css";
 import { showToast } from "../utils/toast";
+import { DEFAULT_COVER, getCoverUrl } from "../utils/assets";
 
 export default function PlaylistsPage() {
   const { user } = useAuth();
@@ -303,7 +304,7 @@ export default function PlaylistsPage() {
               <article className="playlist-card" key={playlist.playlist_id}>
                 <div className="playlist-card-heading">
                   <div className="playlist-cover">
-                    <span>♫</span>
+                    <img src={DEFAULT_COVER} alt={playlist.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
 
                   <div className="playlist-details">
@@ -442,7 +443,16 @@ export default function PlaylistsPage() {
                             playSong(song, playlistQueue);
                           }}
                         >
-                          <div className="playlist-song-icon">♫</div>
+                          <div className="playlist-song-icon">
+                            <img
+                              src={getCoverUrl(song.cover_image_url || song.coverUrl)}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }}
+                              onError={(e) => {
+                                e.target.src = getCoverUrl(null);
+                              }}
+                            />
+                          </div>
 
                           <div className="playlist-song-info">
                             <strong>{song.title}</strong>

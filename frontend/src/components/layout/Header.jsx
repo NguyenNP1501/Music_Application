@@ -12,30 +12,45 @@ export default function Header({
 
   function search(e) {
     e.preventDefault();
-    navigate("songs");
-    window.dispatchEvent(new CustomEvent("music-search", { detail: keyword }));
+    if (keyword.trim()) {
+      navigate("songs");
+      window.dispatchEvent(new CustomEvent("music-search", { detail: keyword.trim() }));
+    }
   }
+
+  const userInitial = (user?.full_name || user?.email || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="top-header">
-      <div className="header-intro">
-        <h2>Không gian âm nhạc</h2>
-        <p>Khám phá và thưởng thức những giai điệu yêu thích</p>
-      </div>
+      {/* Search Bar - Figma Frame 6:34 */}
+      <form className="header-search-bar" onSubmit={search}>
+        <span className="search-icon">⌕</span>
+        <input
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="Tìm bài hát, album, nghệ sĩ..."
+        />
+      </form>
 
       <div className="header-actions">
-        <form className="search-box" onSubmit={search}>
-          <span>⌕</span>
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Tìm bài hát, nghệ sĩ..."
-          />
-        </form>
+        {user?.role === "admin" && (
+          <button
+            type="button"
+            className="secondary-button header-create-btn"
+            onClick={() => navigate("create")}
+          >
+            <span>＋</span> Tạo mới
+          </button>
+        )}
 
         <button
           type="button"
-          className="header-theme-toggle"
+          className="header-action-btn"
           onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
           aria-label={
             theme === "dark"
@@ -49,18 +64,18 @@ export default function Header({
 
         <button
           type="button"
-          className="header-icon"
+          className="header-action-btn"
           onClick={onNotifications}
           aria-label="Thông báo"
           title="Thông báo"
         >
           <svg
             viewBox="0 0 24 24"
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.7"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
@@ -70,16 +85,18 @@ export default function Header({
           </svg>
         </button>
 
+        {/* User Avatar - Figma Frame 6:37 */}
         <button
           type="button"
-          className="user-avatar"
+          className="header-user-avatar"
           onClick={() => navigate("profile")}
           aria-label="Hồ sơ cá nhân"
+          title={user?.full_name || user?.email}
         >
           {user?.avatar_url ? (
             <img src={user.avatar_url} alt="Avatar" />
           ) : (
-            (user?.full_name || user?.email || "U").charAt(0).toUpperCase()
+            <span>{userInitial}</span>
           )}
         </button>
       </div>

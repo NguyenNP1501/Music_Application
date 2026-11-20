@@ -4,6 +4,7 @@ import { useAuth } from "../services/context/AuthContext";
 import PageTitles from "../components/common/PageTitles";
 import EmptyState from "../components/common/EmptyState";
 import { showToast } from "../utils/toast";
+import { getCoverUrl } from "../utils/assets";
 
 import "./MyContentPage.css";
 
@@ -220,14 +221,13 @@ export default function MyContentPage() {
               <article className="my-content-item" key={song.song_id}>
                 <div className="my-content-item-main">
                   <div className="my-content-cover">
-                    {song.album?.cover_image_url ? (
-                      <img
-                        src={song.album.cover_image_url}
-                        alt={song.album.title || song.title}
-                      />
-                    ) : (
-                      <span>♫</span>
-                    )}
+                    <img
+                      src={getCoverUrl(song.album?.cover_image_url || song.cover_image_url)}
+                      alt={song.album?.title || song.title}
+                      onError={(e) => {
+                        e.target.src = getCoverUrl(null);
+                      }}
+                    />
                   </div>
 
                   <div className="my-content-item-info">
@@ -263,11 +263,13 @@ export default function MyContentPage() {
               <article className="my-content-item" key={album.album_id}>
                 <div className="my-content-item-main">
                   <div className="my-content-cover">
-                    {album.cover_image_url ? (
-                      <img src={album.cover_image_url} alt={album.title} />
-                    ) : (
-                      <span>♫</span>
-                    )}
+                    <img
+                      src={getCoverUrl(album.cover_image_url)}
+                      alt={album.title}
+                      onError={(e) => {
+                        e.target.src = getCoverUrl(null);
+                      }}
+                    />
                   </div>
 
                   <div className="my-content-item-info">

@@ -6,6 +6,7 @@ import ArtistsPage from "./ArtistsPage";
 import AlbumsPage from "./AlbumsPage";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
+import { getCoverUrl } from "../utils/assets";
 import "./LibraryPage.css";
 
 const TABS = [
@@ -141,11 +142,13 @@ export default function LibraryPage({
               onClick={() => onNavigate?.("playlists")}
             >
               <div className="library-playlist-cover">
-                {playlist.cover_image_url ? (
-                  <img src={playlist.cover_image_url} alt={playlist.title} />
-                ) : (
-                  <span>♫</span>
-                )}
+                <img
+                  src={getCoverUrl(playlist.cover_image_url)}
+                  alt={playlist.title}
+                  onError={(e) => {
+                    e.target.src = getCoverUrl(null);
+                  }}
+                />
               </div>
 
               <strong>{playlist.title}</strong>

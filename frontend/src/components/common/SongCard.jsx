@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../services/context/AuthContext";
 import { usePlayer } from "../../context/PlayerContext";
 import { showToast } from "../../utils/toast";
+import { getCoverUrl } from "../../utils/assets";
 
 export default function SongCard({
   song,
@@ -55,8 +56,9 @@ export default function SongCard({
     };
   }, [user?.user_id, song.song_id]);
 
-  const cover =
-    coverUrl || song.album?.cover_image_url || song.cover_image_url || song.coverUrl || "";
+  const rawCover =
+    coverUrl || song.album?.cover_image_url || song.cover_image_url || song.coverUrl;
+  const cover = getCoverUrl(rawCover);
 
   const handlePlay = () => {
     if (!song) return;
@@ -65,7 +67,7 @@ export default function SongCard({
         id: song.song_id || song.id,
         title: song.title,
         artist: song.singer || song.artist || "Chưa rõ nghệ sĩ",
-        coverUrl: cover || "",
+        coverUrl: cover,
         durationSec: song.durationSec || 0,
       },
       playlist
@@ -120,57 +122,71 @@ export default function SongCard({
     }
   };
 
+  const durationFormatted = song.durationSec
+    ? `${Math.floor(song.durationSec / 60)}:${(song.durationSec % 60).toString().padStart(2, "0")}`
+    : "3:42";
+
   return (
-    <article className="song-card" onClick={handlePlay} title="Phát bài hát">
-      <div className="song-cover">
-        {cover ? (
-          <img src={cover} alt={song.title || "Bìa bài hát"} />
-        ) : (
-          <span>♫</span>
-        )}
+    <article
+      className="figma-song-row"
+      onClick={handlePlay}
+      title="Bấm để phát bài hát"
+    >
+      <div className="song-row-cover">
+        <img
+          src={cover}
+          alt={song.title || "Bìa bài hát"}
+          onError={(e) => {
+            e.target.src = getCoverUrl(null);
+          }}
+        />
+        <div className="song-row-play-overlay">▶</div>
       </div>
 
-      <div className="song-info">
-        <strong>{song.title}</strong>
-        <span>{song.singer || song.artist || "Chưa rõ nghệ sĩ"}</span>
-        <small>{song.album?.title || song.genre || "Chưa có album"}</small>
+      <div className="song-row-meta">
+        <strong className="song-row-title">{song.title}</strong>
+        <span className="song-row-artist">{song.singer || song.artist || "Chưa rõ nghệ sĩ"}</span>
+      </div>
 
-        <div className="song-card-actions">
+      <div className="song-row-extra">
+        <span className="song-row-duration">{durationFormatted}</span>
+
+        <button
+          type="button"
+          className={`song-row-action-btn ${saved ? "saved" : ""}`}
+          onClick={toggleSaved}
+          title={saved ? "Bỏ lưu bài hát" : "Lưu vào yêu thích"}
+        >
+          {saved ? "♥" : "♡"}
+        </button>
+
+        {onAdd && (
           <button
             type="button"
-            className={`song-save-button ${saved ? "saved" : ""}`}
-            onClick={toggleSaved}
-            title={saved ? "Bỏ lưu bài hát" : "Lưu bài hát"}
+            className="song-row-action-btn"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAdd(song);
+            }}
+            title="Thêm vào playlist"
           >
-            {saved ? "♥ Đã lưu" : "♡ Lưu"}
+            ＋
           </button>
+        )}
 
-          {onAdd && (
-            <button
-              type="button"
-              className="text-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onAdd(song);
-              }}
-            >
-              + Thêm playlist
-            </button>
-          )}
-
-          {onRemoveSaved && (
-            <button
-              type="button"
-              className="text-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRemoveSaved();
-              }}
-            >
-              Bỏ khỏi danh sách
-            </button>
-          )}
-        </div>
+        {onRemoveSaved && (
+          <button
+            type="button"
+            className="song-row-action-btn danger"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemoveSaved();
+            }}
+            title="Bỏ khỏi danh sách"
+          >
+            ✕
+          </button>
+        )}
       </div>
     </article>
   );

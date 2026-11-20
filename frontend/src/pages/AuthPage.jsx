@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../services/context/AuthContext";
 import { apiRequest } from "../services/api";
+import { DEFAULT_COVER } from "../utils/assets";
 import "./AuthPage.css";
 
 export default function AuthPage() {
@@ -22,6 +23,7 @@ export default function AuthPage() {
     dateOfBirth: "",
   });
 
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -35,7 +37,6 @@ export default function AuthPage() {
 
   function change(e) {
     const { name, value } = e.target;
-
     setForm((old) => ({
       ...old,
       [name]: value,
@@ -52,7 +53,6 @@ export default function AuthPage() {
 
   async function submit(e) {
     e.preventDefault();
-
     setError("");
     setMessage("");
 
@@ -86,7 +86,6 @@ export default function AuthPage() {
             email: form.email,
           },
         });
-
         setMessage(data.message);
       } else if (isReset) {
         const data = await apiRequest("/auth/password/reset", {
@@ -99,15 +98,8 @@ export default function AuthPage() {
         });
 
         setMessage(data.message);
-
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        );
-
+        window.history.replaceState({}, document.title, window.location.pathname);
         setMode("login");
-
         setForm((old) => ({
           ...old,
           password: "",
@@ -121,48 +113,6 @@ export default function AuthPage() {
     }
   }
 
-  function renderPasswordField({
-    name,
-    label,
-    value,
-    show,
-    setShow,
-    autoComplete,
-    requireConfirmation = false,
-  }) {
-    return (
-      <label className="auth-field">
-        <span className="auth-field-label">{label}</span>
-
-        <div className="auth-input-wrapper">
-          <input
-            type={show ? "text" : "password"}
-            name={name}
-            value={value}
-            onChange={change}
-            placeholder="Nhập mật khẩu"
-            autoComplete={autoComplete}
-            minLength={8}
-            required
-          />
-
-          <button
-            type="button"
-            className="auth-password-toggle"
-            onClick={() => setShow(!show)}
-            aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-          >
-            {show ? "Ẩn" : "Hiện"}
-          </button>
-        </div>
-
-        {requireConfirmation && (
-          <small>Mật khẩu phải có ít nhất 8 ký tự.</small>
-        )}
-      </label>
-    );
-  }
-
   const heading = isRegister
     ? "Tạo tài khoản"
     : isForgot
@@ -172,268 +122,249 @@ export default function AuthPage() {
         : "Chào mừng trở lại";
 
   const description = isRegister
-    ? "Đăng ký để khám phá và lưu giữ những giai điệu yêu thích."
+    ? "Đăng ký để tiếp tục hành trình âm nhạc của bạn."
     : isForgot
-      ? "Nhập địa chỉ email đã đăng ký để nhận hướng dẫn đặt lại mật khẩu."
+      ? "Nhập địa chỉ email để nhận hướng dẫn đặt lại mật khẩu."
       : isReset
-        ? "Tạo mật khẩu mới để tiếp tục sử dụng tài khoản của bạn."
-        : "Đăng nhập để tiếp tục hành trình âm nhạc của bạn.";
+        ? "Tạo mật khẩu mới cho tài khoản của bạn."
+        : "Đăng nhập để tiếp tục giai điệu của bạn.";
 
   const submitText = loading
     ? "Đang xử lý..."
     : isLogin
       ? "Đăng nhập"
       : isRegister
-        ? "Tạo tài khoản"
+        ? "Đăng ký ngay"
         : isForgot
           ? "Gửi liên kết đặt lại"
           : "Xác nhận mật khẩu mới";
 
   return (
-    <main className="auth-page">
-      <section className="auth-decoration">
-        <div className="auth-brand">
-          <div className="auth-brand-icon">♫</div>
-          <span>Music Space</span>
-        </div>
-
-        <div className="auth-decoration-content">
-          <span className="auth-eyebrow">YOUR MUSIC. YOUR SPACE.</span>
-
-          <h1>
-            Âm nhạc là
-            <br />
-            ngôn ngữ của
-            <br />
-            cảm xúc.
-          </h1>
-
-          <p>
-            Khám phá những giai điệu mới, xây dựng thư viện âm nhạc của riêng
-            bạn và chia sẻ sở thích âm nhạc với mọi người.
-          </p>
-
-          <div className="auth-feature-list">
-            <div className="auth-feature">
-              <span className="auth-feature-icon">♫</span>
-              <div>
-                <strong>Khám phá âm nhạc</strong>
-                <small>Tìm kiếm những bài hát bạn yêu thích</small>
-              </div>
-            </div>
-
-            <div className="auth-feature">
-              <span className="auth-feature-icon">▤</span>
-              <div>
-                <strong>Thư viện cá nhân</strong>
-                <small>Lưu trữ và quản lý bộ sưu tập của bạn</small>
-              </div>
-            </div>
-
-            <div className="auth-feature">
-              <span className="auth-feature-icon">♡</span>
-              <div>
-                <strong>Kết nối cộng đồng</strong>
-                <small>Chia sẻ âm nhạc cùng những người khác</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="auth-decoration-footer">
-          MUSIC SPACE — FEEL EVERY BEAT
-        </div>
-
-        <div className="auth-decoration-circle auth-circle-one" />
-        <div className="auth-decoration-circle auth-circle-two" />
-      </section>
-
-      <section className="auth-form-section">
-        <div className="auth-form-container">
-          <div className="auth-mobile-brand">
-            <span>♫</span>
-            Music Space
+    <div className="figma-auth-wrapper">
+      <div className="figma-auth-card">
+        {/* Left Column: "Không gian âm nhạc" (Figma Frame 6:1122) */}
+        <section className="auth-left-banner">
+          <div className="banner-top-brand">
+            <span className="banner-logo-icon">◖◖</span>
+            <span className="banner-logo-text">Music Application</span>
           </div>
 
-          <form className="auth-form" onSubmit={submit}>
-            <div className="auth-form-header">
-              <span className="auth-form-eyebrow">
-                {isRegister
-                  ? "CREATE YOUR ACCOUNT"
-                  : isForgot
-                    ? "ACCOUNT RECOVERY"
-                    : isReset
-                      ? "SECURITY"
-                      : "WELCOME BACK"}
-              </span>
+          <div className="banner-artwork">
+            <img src={DEFAULT_COVER} alt="Music Application" />
+          </div>
 
-              <h2>{heading}</h2>
-              <p className="auth-description">{description}</p>
+          <div className="banner-bottom-text">
+            <h2>
+              Mọi cảm xúc,<br />
+              một giai điệu.
+            </h2>
+            <p>Khám phá. Lưu giữ. Lắng nghe cùng nhau.</p>
+          </div>
+        </section>
+
+        {/* Right Column: "Biểu mẫu tài khoản" (Figma Frame 6:1130) */}
+        <section className="auth-right-content">
+          <div className="auth-form-box">
+            <div className="auth-header-meta">
+              <span className="auth-eyebrow">ÂM NHẠC KẾT NỐI CHÚNG TA</span>
+              <h1>{heading}</h1>
+              <p className="auth-subtitle">{description}</p>
             </div>
-
-            {!isForgot && !isReset && (
-              <div className="auth-mode-switch">
-                <button
-                  type="button"
-                  className={isLogin ? "selected" : ""}
-                  onClick={() => switchMode("login")}
-                >
-                  Đăng nhập
-                </button>
-
-                <button
-                  type="button"
-                  className={isRegister ? "selected" : ""}
-                  onClick={() => switchMode("register")}
-                >
-                  Đăng ký
-                </button>
-              </div>
-            )}
 
             {error && (
-              <div className="auth-error" role="alert">
-                <span>!</span>
-                {error}
+              <div className="error-message" role="alert">
+                <span>!</span> {error}
               </div>
             )}
 
             {message && (
-              <div className="auth-success" role="status">
-                <span>✓</span>
-                {message}
+              <div className="success-message" role="status">
+                <span>✓</span> {message}
               </div>
             )}
 
-            {isRegister && (
-              <>
-                <label className="auth-field">
-                  <span className="auth-field-label">
-                    Họ và tên <span className="required-mark">*</span>
-                  </span>
+            <form onSubmit={submit} className="auth-input-form">
+              {isRegister && (
+                <>
+                  <div className="auth-field-group">
+                    <label>Họ và tên *</label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={form.full_name}
+                      onChange={change}
+                      placeholder="Nguyễn Văn A"
+                      required
+                    />
+                  </div>
 
+                  <div className="auth-field-group">
+                    <label>Tên hiển thị</label>
+                    <input
+                      type="text"
+                      name="nickname"
+                      value={form.nickname}
+                      onChange={change}
+                      placeholder="Anh Minh"
+                    />
+                  </div>
+
+                  <div className="auth-field-group">
+                    <label>Ngày sinh</label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={form.dateOfBirth}
+                      onChange={change}
+                    />
+                  </div>
+                </>
+              )}
+
+              {(isLogin || isRegister || isForgot) && (
+                <div className="auth-field-group">
+                  <label>Email *</label>
                   <input
-                    type="text"
-                    name="full_name"
-                    value={form.full_name}
+                    type="email"
+                    name="email"
+                    value={form.email}
                     onChange={change}
-                    placeholder="Nhập họ và tên của bạn"
-                    autoComplete="name"
+                    placeholder="anhminh@email.com"
+                    autoComplete="email"
                     required
                   />
-                </label>
+                </div>
+              )}
 
-                <label className="auth-field">
-                  <span className="auth-field-label">Tên hiển thị</span>
+              {(isLogin || isRegister || isReset) && (
+                <div className="auth-field-group">
+                  <label>{isReset ? "Mật khẩu mới *" : "Mật khẩu *"}</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={form.password}
+                      onChange={change}
+                      placeholder="••••••••••••"
+                      autoComplete={isLogin ? "current-password" : "new-password"}
+                      minLength={8}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? "Ẩn" : "Hiện"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                  <input
-                    type="text"
-                    name="nickname"
-                    value={form.nickname}
-                    onChange={change}
-                    placeholder="Nhập tên hiển thị"
-                    autoComplete="nickname"
-                  />
-                </label>
+              {(isRegister || isReset) && (
+                <div className="auth-field-group">
+                  <label>Xác nhận mật khẩu *</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={form.confirmPassword}
+                      onChange={change}
+                      placeholder="••••••••••••"
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? "Ẩn" : "Hiện"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                <label className="auth-field">
-                  <span className="auth-field-label">Ngày sinh</span>
+              {isLogin && (
+                <div className="auth-remember-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <span>Ghi nhớ đăng nhập</span>
+                  </label>
 
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={form.dateOfBirth}
-                    onChange={change}
-                    autoComplete="bday"
-                  />
-                </label>
-              </>
-            )}
+                  <button
+                    type="button"
+                    className="forgot-link-btn"
+                    onClick={() => switchMode("forgot")}
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+              )}
 
-            {(isLogin || isRegister || isForgot) && (
-              <label className="auth-field">
-                <span className="auth-field-label">
-                  Địa chỉ email <span className="required-mark">*</span>
+              <button
+                type="submit"
+                className="primary-button auth-submit-btn"
+                disabled={loading || (isReset && !resetToken)}
+              >
+                {submitText}
+              </button>
+
+              <div className="auth-switch-box">
+                {isLogin && (
+                  <p>
+                    Chưa có tài khoản?{" "}
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => switchMode("register")}
+                    >
+                      Đăng ký ngay
+                    </button>
+                  </p>
+                )}
+
+                {isRegister && (
+                  <p>
+                    Đã có tài khoản?{" "}
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => switchMode("login")}
+                    >
+                      Đăng nhập
+                    </button>
+                  </p>
+                )}
+
+                {(isForgot || isReset) && (
+                  <p>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => switchMode("login")}
+                    >
+                      ← Quay lại đăng nhập
+                    </button>
+                  </p>
+                )}
+
+                <span className="auth-note-text">
+                  Chỉ một tài khoản, cả thế giới âm nhạc.
                 </span>
-
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={change}
-                  placeholder="example@email.com"
-                  autoComplete="email"
-                  required
-                />
-              </label>
-            )}
-
-            {(isLogin || isRegister || isReset) &&
-              renderPasswordField({
-                name: "password",
-                label: isReset ? "Mật khẩu mới" : "Mật khẩu",
-                value: form.password,
-                show: showPassword,
-                setShow: setShowPassword,
-                autoComplete: isLogin ? "current-password" : "new-password",
-                requireConfirmation: isRegister || isReset,
-              })}
-
-            {(isRegister || isReset) &&
-              renderPasswordField({
-                name: "confirmPassword",
-                label: "Xác nhận mật khẩu",
-                value: form.confirmPassword,
-                show: showConfirmPassword,
-                setShow: setShowConfirmPassword,
-                autoComplete: "new-password",
-              })}
-
-            {isLogin && (
-              <div className="auth-forgot-row">
-                <button type="button" onClick={() => switchMode("forgot")}>
-                  Quên mật khẩu?
-                </button>
               </div>
-            )}
+            </form>
 
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={loading || (isReset && !resetToken)}
-            >
-              {submitText}
-              {!loading && <span>→</span>}
-            </button>
-
-            {(isForgot || isReset) && (
-              <p className="auth-switch-text">
-                <button type="button" onClick={() => switchMode("login")}>
-                  ← Quay lại đăng nhập
-                </button>
-              </p>
-            )}
-
-            {!isForgot && !isReset && (
-              <p className="auth-switch-text">
-                {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
-
-                <button
-                  type="button"
-                  onClick={() => switchMode(isLogin ? "register" : "login")}
-                >
-                  {isLogin ? " Đăng ký ngay" : " Đăng nhập"}
-                </button>
-              </p>
-            )}
-
-            <div className="auth-form-bottom">
-              Bằng việc tiếp tục, bạn đồng ý sử dụng Music Space một cách có
-              trách nhiệm.
-            </div>
-          </form>
-        </div>
-      </section>
-    </main>
+            <footer className="auth-copyright">
+              Music Application © 2026
+            </footer>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

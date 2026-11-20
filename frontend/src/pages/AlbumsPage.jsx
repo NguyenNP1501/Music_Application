@@ -4,6 +4,7 @@ import PageTitle from "../components/common/PageTitles";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
 import Pagination from "../components/common/Pagination";
+import { getCoverUrl } from "../utils/assets";
 
 export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
   const [albums, setAlbums] = useState([]);
@@ -38,37 +39,35 @@ export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
 
   if (selectedAlbum) {
     const songs = selectedAlbum.songs || [];
+    const cover = getCoverUrl(selectedAlbum.cover_image_url);
 
     return (
       <section className="catalog-detail-page">
-        <button type="button" className="catalog-back-button" onClick={onBack}>
+        <button type="button" className="secondary-button" onClick={onBack} style={{ marginBottom: "24px" }}>
           ← Quay lại danh sách album
         </button>
 
         <div className="catalog-detail-header">
           <div className="catalog-detail-cover">
-            {selectedAlbum.cover_image_url ? (
-              <img
-                src={selectedAlbum.cover_image_url}
-                alt={selectedAlbum.title}
-              />
-            ) : (
-              <span>♫</span>
-            )}
+            <img
+              src={cover}
+              alt={selectedAlbum.title}
+              onError={(e) => {
+                e.target.src = getCoverUrl(null);
+              }}
+            />
           </div>
 
           <div className="catalog-detail-info">
-            <span className="catalog-detail-eyebrow">ALBUM</span>
+            <span className="eyebrow">ALBUM</span>
             <h1>{selectedAlbum.title}</h1>
-
             {selectedAlbum.description && <p>{selectedAlbum.description}</p>}
-
-            <span>{songs.length} bài hát</span>
+            <span className="catalog-song-count">{songs.length} bài hát</span>
           </div>
         </div>
 
         <section className="catalog-detail-songs">
-          <h2>Bài hát trong album</h2>
+          <h2 className="section-title" style={{ marginBottom: "20px" }}>Bài hát trong album</h2>
 
           {songs.length ? (
             <div className="song-grid">
@@ -77,6 +76,7 @@ export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
                   key={song.song_id || song.id}
                   song={song}
                   coverUrl={selectedAlbum.cover_image_url}
+                  playlist={songs}
                 />
               ))}
             </div>
@@ -91,7 +91,7 @@ export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
   return (
     <>
       <PageTitle
-        eyebrow="COLLECTION"
+        eyebrow="BỘ SƯU TẬP"
         title="Album"
         description="Khám phá các album âm nhạc trong hệ thống."
       />
@@ -106,57 +106,65 @@ export default function AlbumsPage({ selectedAlbum, onSelectAlbum, onBack }) {
         <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Tìm album..."
+          placeholder="Tìm album theo tên..."
         />
-        <button className="primary-button">Tìm kiếm</button>
+        <button type="submit" className="primary-button">
+          Tìm kiếm
+        </button>
       </form>
 
-      {error && <p className="error-message">{error}</p>}
-
-      {loading ? (
-        <div className="loading">Đang tải album...</div>
-      ) : albums.length ? (
-        <div className="album-grid">
-          {albums.map((album) => (
-            <article
-              className="album-card album-card-large"
-              key={album.album_id}
-              onClick={() => onSelectAlbum?.(album)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelectAlbum?.(album);
-                }
-              }}
-              title={`Xem album ${album.title}`}
-            >
-              <div className="album-cover">
-                {album.cover_image_url ? (
-                  <img src={album.cover_image_url} alt={album.title} />
-                ) : (
-                  "♫"
-                )}
-              </div>
-
-              <strong>{album.title}</strong>
-              <span>{album.songs?.length || 0} bài hát</span>
-
-              {album.description && <p>{album.description}</p>}
-            </article>
-          ))}
+      {error && (
+        <div className="error-message" role="alert">
+          <span>!</span> {error}
         </div>
-      ) : (
-        <EmptyState>Không tìm thấy album.</EmptyState>
       )}
 
-      {!loading && albums.length > 0 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onChange={(nextPage) => loadAlbums(keyword, nextPage)}
-        />
+      {loading ? (
+        <div className="loading">Đang tải danh sách album...</div>
+      ) : albums.length ? (
+        <>
+          <div className="figma-album-row">
+            {albums.map((album) => {
+              const albumCover = getCoverUrl(album.cover_image_url);
+              const songCount = Array.isArray(album.songs)
+                ? album.songs.length
+                : (album.song_count ?? 0);
+
+              return (
+                <article
+                  className="figma-album-card"
+                  key={album.album_id || album.id}
+                  onClick={() => onSelectAlbum?.(album)}
+                  role="button"
+                  tabIndex={0}
+                  title={`Xem album ${album.title}`}
+                >
+                  <div className="album-card-cover">
+                    <img
+                      src={albumCover}
+                      alt={`Bìa album ${album.title}`}
+                      onError={(e) => {
+                        e.target.src = getCoverUrl(null);
+                      }}
+                    />
+                    <div className="album-card-play-overlay">▶</div>
+                  </div>
+
+                  <strong className="album-card-title">{album.title || "Album"}</strong>
+                  <span className="album-card-subtitle">{songCount} bài hát</span>
+                </article>
+              );
+            })}
+          </div>
+
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(nextPage) => loadAlbums(keyword, nextPage)}
+          />
+        </>
+      ) : (
+        <EmptyState>Không tìm thấy album nào.</EmptyState>
       )}
     </>
   );

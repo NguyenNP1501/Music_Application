@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
-import PageTitle from "../components/common/PageTitles";
+import { useAuth } from "../services/context/AuthContext";
+import { usePlayer } from "../context/PlayerContext";
 import SongCard from "../components/common/SongCard";
 import EmptyState from "../components/common/EmptyState";
+import { DEFAULT_COVER, getCoverUrl } from "../utils/assets";
 
 export default function HomePage({ navigate, onSelectAlbum }) {
+  const { user } = useAuth();
+  const { playSong } = usePlayer();
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,108 +50,139 @@ export default function HomePage({ navigate, onSelectAlbum }) {
     };
   }, []);
 
-  const displayedSongs = songs.slice(0, 8);
-  const displayedAlbums = albums.slice(0, 3);
+  const displayedSongs = songs.slice(0, 6);
+  const displayedAlbums = albums.slice(0, 5);
+
+  const greetingName = (user?.nickname || user?.full_name || "BẠN").toUpperCase();
+
+  const handlePlayFeatured = () => {
+    if (songs.length > 0) {
+      const first = songs[0];
+      playSong({
+        id: first.song_id || first.id,
+        title: first.title,
+        artist: first.singer || first.artist || "Chưa rõ nghệ sĩ",
+        coverUrl: getCoverUrl(first.cover_image_url || first.album?.cover_image_url),
+        durationSec: first.durationSec || 0,
+      }, songs);
+    } else {
+      navigate("songs");
+    }
+  };
 
   return (
-    <div className="home-page">
-      <section className="home-hero">
-        <div className="home-hero-content">
-          <span className="home-hero-eyebrow">
-            <span className="home-hero-dot" />
-            MUSIC SPACE
-          </span>
+    <div className="figma-home-container">
+      {/* 1. Header Greeting (Figma Frame 6:885 & 6:886) */}
+      <div className="home-greeting-section">
+        <span className="home-eyebrow-text">CHÀO BUỔI TỐI, {greetingName}</span>
+        <h1 className="home-main-title">Hôm nay, bạn muốn nghe gì?</h1>
+      </div>
 
-          <h1>
-            Không gian âm nhạc
-            <br />
-            dành riêng cho bạn.
-          </h1>
+      {/* 2. Playlist nổi bật (Figma Frame 6:887) */}
+      <section className="home-featured-banner">
+        <div className="featured-banner-content">
+          <span className="featured-tag">TUYỂN CHỌN TUẦN NÀY</span>
+          <h2 className="featured-heading">
+            Chạm vào giai điệu<br />
+            của riêng bạn.
+          </h2>
+          <p className="featured-sub">Những thanh âm mới, những cảm xúc quen.</p>
 
-          <p>
-            Khám phá những giai điệu yêu thích, tìm kiếm nghệ sĩ và xây dựng thư
-            viện âm nhạc của riêng bạn.
-          </p>
-
-          <div className="home-hero-actions">
-            <button
-              type="button"
-              className="home-primary-button"
-              onClick={() => navigate("songs")}
-            >
-              Khám phá bài hát
-              <span>→</span>
-            </button>
-
-            <button
-              type="button"
-              className="home-secondary-button"
-              onClick={() => navigate("albums")}
-            >
-              Xem album
-            </button>
-          </div>
-
-          <div className="home-hero-stats">
-            <div>
-              <strong>{loading ? "—" : songs.length}</strong>
-              <span>Bài hát</span>
-            </div>
-
-            <span className="home-stat-divider" />
-
-            <div>
-              <strong>{loading ? "—" : albums.length}</strong>
-              <span>Album</span>
-            </div>
-          </div>
+          <button
+            type="button"
+            className="primary-button featured-play-btn"
+            onClick={handlePlayFeatured}
+          >
+            <span>▶</span> Nghe ngay
+          </button>
         </div>
 
-        <div className="home-hero-art" aria-hidden="true">
-          <div className="home-art-orbit home-art-orbit-one" />
-          <div className="home-art-orbit home-art-orbit-two" />
-
-          <div className="home-art-disc">
-            <div className="home-art-disc-inner">
-              <span>♫</span>
-            </div>
-          </div>
-
-          <span className="home-art-note home-art-note-one">♪</span>
-          <span className="home-art-note home-art-note-two">♫</span>
+        <div className="featured-banner-cover">
+          <img src={DEFAULT_COVER} alt="Tuyển chọn tuần này" />
         </div>
       </section>
 
       {error && (
-        <div className="home-error" role="alert">
-          <span>!</span>
-          {error}
+        <div className="error-message" role="alert">
+          <span>!</span> {error}
         </div>
       )}
 
-      <section className="content-section home-section">
-        <PageTitle
-          eyebrow="YOUR MUSIC"
-          title="Bài hát mới"
-          description="Những bài hát hiện có trong thư viện âm nhạc."
-          action={
-            <button
-              type="button"
-              className="home-view-all"
-              onClick={() => navigate("songs")}
-            >
-              Xem tất cả <span>→</span>
-            </button>
-          }
-        />
+      {/* 3. Section 1: Album mới khám phá (Figma Frame 6:894) */}
+      <section className="home-section-group">
+        <div className="section-header-row">
+          <h2 className="section-title">Album mới khám phá</h2>
+          <button
+            type="button"
+            className="section-link-btn"
+            onClick={() => navigate("albums")}
+          >
+            Xem tất cả →
+          </button>
+        </div>
 
         {loading ? (
-          <div className="home-loading">
-            <span className="home-loading-spinner" />
-            Đang tải danh sách bài hát...
+          <div className="loading">Đang tải danh sách album...</div>
+        ) : displayedAlbums.length > 0 ? (
+          <div className="figma-album-row">
+            {displayedAlbums.map((album) => {
+              const albumCover = getCoverUrl(album.cover_image_url);
+              const songCount = Array.isArray(album.songs)
+                ? album.songs.length
+                : (album.song_count ?? 0);
+
+              return (
+                <article
+                  key={album.album_id || album.id}
+                  className="figma-album-card"
+                  onClick={() => onSelectAlbum?.(album)}
+                  role="button"
+                  tabIndex={0}
+                  title={`Xem album ${album.title}`}
+                >
+                  <div className="album-card-cover">
+                    <img
+                      src={albumCover}
+                      alt={album.title || "Album"}
+                      onError={(e) => {
+                        e.target.src = getCoverUrl(null);
+                      }}
+                    />
+                    <div className="album-card-play-overlay">▶</div>
+                  </div>
+
+                  <strong className="album-card-title" title={album.title}>
+                    {album.title || "Album mới"}
+                  </strong>
+                  <span className="album-card-subtitle">
+                    {album.artist || "Nhiều nghệ sĩ"} · {songCount} bài hát
+                  </span>
+                </article>
+              );
+            })}
           </div>
+        ) : (
+          <EmptyState>Chưa có album nào được phát hành.</EmptyState>
+        )}
+      </section>
+
+      {/* 4. Section 2: Dành riêng cho bạn (Figma Frame 6:916) */}
+      <section className="home-section-group">
+        <div className="section-header-row">
+          <h2 className="section-title">Dành riêng cho bạn</h2>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate("songs")}
+          >
+            Khám phá gợi ý
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="loading">Đang tải danh sách bài hát...</div>
         ) : displayedSongs.length > 0 ? (
-          <div className="song-grid home-song-grid">
+          <div className="song-grid">
             {displayedSongs.map((song) => (
               <SongCard
                 key={song.song_id || song.id}
@@ -158,79 +193,6 @@ export default function HomePage({ navigate, onSelectAlbum }) {
           </div>
         ) : (
           <EmptyState>Chưa có bài hát trong hệ thống.</EmptyState>
-        )}
-      </section>
-
-      <section className="content-section home-section">
-        <PageTitle
-          eyebrow="COLLECTION"
-          title="Album"
-          description="Khám phá các album trong thư viện."
-          action={
-            <button
-              type="button"
-              className="home-view-all"
-              onClick={() => navigate("albums")}
-            >
-              Xem tất cả <span>→</span>
-            </button>
-          }
-        />
-
-        {loading ? (
-          <div className="home-loading">
-            <span className="home-loading-spinner" />
-            Đang tải danh sách album...
-          </div>
-        ) : displayedAlbums.length > 0 ? (
-          <div className="home-album-grid">
-            {displayedAlbums.map((album) => (
-              <article
-                className="home-album-card"
-                key={album.album_id || album.id}
-                onClick={() => onSelectAlbum?.(album)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelectAlbum?.(album);
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                title={`Xem album ${album.title}`}
-              >
-                <div className="home-album-cover">
-                  {album.cover_image_url ? (
-                    <img
-                      src={album.cover_image_url}
-                      alt={`Bìa album ${album.title}`}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span>♫</span>
-                  )}
-
-                  <div className="home-album-cover-overlay">
-                    <span>♫</span>
-                  </div>
-                </div>
-
-                <div className="home-album-info">
-                  <strong title={album.title}>
-                    {album.title || "Album chưa có tên"}
-                  </strong>
-                  <span>
-                    {Array.isArray(album.songs)
-                      ? album.songs.length
-                      : (album.song_count ?? 0)}{" "}
-                    bài hát
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState>Chưa có album trong hệ thống.</EmptyState>
         )}
       </section>
     </div>

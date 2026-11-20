@@ -1,112 +1,123 @@
-/* ==============================
-   SIDEBAR
-============================== */
+/* ==========================================================================
+   SIDEBAR (Figma Component "Sidebar / Desktop" Frame 6:60)
+   ========================================================================== */
 
 .sidebar {
-  width: 240px;
-  min-height: 100vh;
+  width: 220px;
   height: 100%;
-  position: sticky;
-  top: 0;
+  max-height: 100vh;
+  position: relative;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 28px 14px 18px;
-  overflow-y: auto;
-  background: var(--music-surface);
-  border-right: 1px solid var(--music-border);
+  padding: 24px 12px 20px;
+  background: var(--music-panel);
+  border-right: 1px solid var(--music-line);
   color: var(--music-text);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+  z-index: 50;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--music-line) transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, width 0.2s ease;
+}
+
+.has-player .sidebar {
+  padding-bottom: 110px;
 }
 
 /* Brand */
-
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 9px 37px;
-  color: var(--music-text);
-  font-size: 18px;
-  font-weight: 800;
-  white-space: nowrap;
+  padding: 6px 12px 32px;
+  user-select: none;
 }
 
 .brand-icon {
-  width: 39px;
-  height: 39px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: var(--music-soft);
+  font-size: 26px;
+  font-weight: 800;
   color: var(--music-primary);
-  font-size: 23px;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
-.brand-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.brand-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  color: var(--music-text);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.2px;
+}
+
+.brand-subtitle {
+  color: var(--music-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  margin-top: 2px;
 }
 
 /* Section label */
-
 .sidebar-label {
-  margin: 13px 10px 11px;
+  margin: 18px 12px 8px;
   color: var(--music-muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
 }
 
-/* Navigation */
-
+/* Navigation items */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .nav-item {
   width: 100%;
-  min-height: 44px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 13px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--music-muted);
   text-align: left;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
+  transition: all 0.18s ease;
 }
 
 .nav-item:hover {
   background: var(--music-hover);
-  color: var(--music-primary);
+  color: var(--music-text);
 }
 
 .nav-item.active {
-  background: var(--music-soft);
+  background: var(--music-hover);
   color: var(--music-primary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .nav-icon {
-  width: 22px;
+  width: 20px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  font-size: 19px;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .nav-text {
@@ -115,87 +126,48 @@
   white-space: nowrap;
 }
 
-/* Admin */
-
+/* Admin block */
 .sidebar-admin {
-  margin-top: 24px;
+  margin-top: 20px;
+  border-top: 1px solid var(--music-line);
+  padding-top: 10px;
 }
 
-/* Bottom */
-
+/* Bottom note */
 .sidebar-bottom {
   margin-top: auto;
-  padding: 20px 5px 0;
+  padding: 16px 8px 0;
 }
 
 .sidebar-note {
-  padding: 15px 12px;
-  border-radius: 11px;
-  background: var(--music-soft);
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--music-card-alt);
   color: var(--music-muted);
-  font-size: 10px;
-  line-height: 1.7;
+  font-size: 11px;
+  line-height: 1.5;
   text-align: center;
 }
 
-/* ==============================
-   DARK MODE
-============================== */
-
-:root[data-theme="dark"] .sidebar {
-  background: #171522;
-  border-right-color: #302a40;
-}
-
-:root[data-theme="dark"] .sidebar-brand {
-  color: #f0edf7;
-}
-
-:root[data-theme="dark"] .nav-item {
-  color: #aaa3bb;
-}
-
-:root[data-theme="dark"] .nav-item:hover {
-  background: #29233a;
-  color: #b99fff;
-}
-
-:root[data-theme="dark"] .nav-item.active {
-  background: #302743;
-  color: #b99fff;
-}
-
-:root[data-theme="dark"] .sidebar-note {
-  background: #242033;
-  color: #aaa3bb;
-}
-
-/* ==============================
-   TABLET
-============================== */
-
+/* Responsive */
 @media (max-width: 900px) {
   .sidebar {
-    width: 210px;
+    width: 200px;
   }
 }
 
-/* ==============================
-   MOBILE
-============================== */
-
 @media (max-width: 760px) {
   .sidebar {
-    width: 68px;
-    padding: 20px 8px;
+    width: 64px;
+    padding: 18px 6px;
   }
 
   .sidebar-brand {
     justify-content: center;
-    padding: 0 0 28px;
+    padding: 0 0 24px;
   }
 
-  .brand-name,
+  .brand-text-group,
   .sidebar-label,
   .nav-text,
   .sidebar-note {
@@ -204,14 +176,11 @@
 
   .nav-item {
     justify-content: center;
-    padding: 12px 4px;
+    padding: 0;
+    height: 44px;
   }
 
   .nav-icon {
     font-size: 20px;
-  }
-
-  .sidebar-admin {
-    margin-top: 18px;
   }
 }
