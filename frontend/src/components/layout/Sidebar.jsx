@@ -13,12 +13,14 @@ export default function Sidebar({ page, navigate }) {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand">
-        <span className="brand-icon">♫</span>
-        <span className="brand-name">Music Space</span>
+      {/* Brand: Match Figma Frame 6:60 */}
+      <div className="sidebar-brand" onClick={() => navigate("home")} style={{ cursor: "pointer" }}>
+        <span className="brand-icon">◖◖</span>
+        <div className="brand-text-group">
+          <span className="brand-title">Music</span>
+          <span className="brand-subtitle">APPLICATION</span>
+        </div>
       </div>
-
-      <p className="sidebar-label">MENU CHÍNH</p>
 
       <nav className="sidebar-nav">
         {menus.map((item) => (
@@ -32,21 +34,22 @@ export default function Sidebar({ page, navigate }) {
             <span className="nav-text">{item.label}</span>
           </button>
         ))}
+
+        {user?.role === "admin" && (
+          <button
+            type="button"
+            className={`nav-item ${page === "create" ? "active" : ""}`}
+            onClick={() => navigate("create")}
+          >
+            <span className="nav-icon">＋</span>
+            <span className="nav-text">Tạo mới</span>
+          </button>
+        )}
       </nav>
 
       {user?.role === "admin" && (
-        <button
-          className={`nav-item ${page === "create" ? "active" : ""}`}
-          onClick={() => navigate("create")}
-        >
-          <span className="nav-icon">＋</span>
-          Tạo mới
-        </button>
-      )}
-
-      {user?.role === "admin" && (
         <div className="sidebar-admin">
-          <p className="sidebar-label">QUẢN LÝ</p>
+          <p className="sidebar-label">QUẢN TRỊ</p>
 
           <button
             type="button"
@@ -60,7 +63,7 @@ export default function Sidebar({ page, navigate }) {
       )}
 
       <div className="sidebar-bottom">
-        <div className="sidebar-note">Âm nhạc kết nối mọi cảm xúc.</div>
+        <div className="sidebar-note">Một nhịp điệu. Một hệ thống.</div>
       </div>
     </aside>
   );

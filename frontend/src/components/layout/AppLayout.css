@@ -1,29 +1,47 @@
 .app-main {
   min-width: 0;
   flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .page-content {
-  max-width: 1500px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 32px 38px 60px;
+  padding: 32px 38px 48px;
+}
+
+.has-player .page-content {
+  padding-bottom: 120px;
 }
 
 @media (max-width: 1050px) {
   .page-content {
-    padding: 28px 25px 50px;
+    padding: 28px 25px 44px;
+  }
+  .has-player .page-content {
+    padding-bottom: 110px;
   }
 }
 
 @media (max-width: 760px) {
   .page-content {
-    padding: 24px 18px 40px;
+    padding: 24px 18px 36px;
+  }
+  .has-player .page-content {
+    padding-bottom: 105px;
   }
 }
 
 @media (max-width: 520px) {
   .page-content {
-    padding: 20px 14px 35px;
+    padding: 20px 14px 30px;
+  }
+  .has-player .page-content {
+    padding-bottom: 100px;
   }
 }
 

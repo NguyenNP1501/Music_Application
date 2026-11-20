@@ -1,5 +1,8 @@
+import { getCoverUrl } from "../../utils/assets";
+
 export default function RoomMusicPlayer({ song, isOwner }) {
   const hasSong = Boolean(song);
+  const cover = getCoverUrl(song?.cover_image_url);
 
   return (
     <section className="room-player-card">
@@ -10,14 +13,13 @@ export default function RoomMusicPlayer({ song, isOwner }) {
 
       <div className="room-song-info">
         <div className="room-cover">
-          {song?.cover_image_url ? (
-            <img
-              src={song.cover_image_url}
-              alt={song.title || "Ảnh bìa bài hát"}
-            />
-          ) : (
-            <span>♫</span>
-          )}
+          <img
+            src={cover}
+            alt={song?.title || "Ảnh bìa bài hát"}
+            onError={(e) => {
+              e.target.src = getCoverUrl(null);
+            }}
+          />
         </div>
 
         <div className="room-song-details">

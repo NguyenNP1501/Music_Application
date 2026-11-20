@@ -35,9 +35,9 @@ export default function App() {
   const [selectedArtist, setSelectedArtist] = useState("");
 
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("music-space-theme") === "dark"
-      ? "dark"
-      : "light";
+    return localStorage.getItem("music-space-theme") === "light"
+      ? "light"
+      : "dark";
   });
 
   useEffect(() => {

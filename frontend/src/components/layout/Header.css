@@ -1,95 +1,117 @@
+/* ==========================================================================
+   HEADER (Figma Header Frame 6:105)
+   ========================================================================== */
+
 .top-header {
-  min-height: 88px;
-  padding: 15px 35px;
+  height: 80px;
+  padding: 0 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 25px;
+  gap: 20px;
   position: sticky;
   top: 0;
-  z-index: 15;
-  background: var(--music-surface);
-  border-bottom: 1px solid var(--music-border);
+  z-index: 40;
+  background: var(--music-panel);
+  border-bottom: 1px solid var(--music-line);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.header-intro h2 {
-  margin: 0 0 5px;
-  color: var(--music-text);
-  font-size: 17px;
+/* Search Bar Pill (Figma Component "Tìm kiếm" Frame 6:34) */
+.header-search-bar {
+  width: min(460px, 45vw);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  border: 1px solid var(--music-line);
+  border-radius: 24px;
+  background: var(--music-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.header-intro p {
-  margin: 0;
+.header-search-bar:focus-within {
+  border-color: var(--music-primary);
+  box-shadow: 0 0 0 3px rgba(172, 145, 255, 0.15);
+}
+
+.header-search-bar .search-icon {
+  font-size: 22px;
   color: var(--music-muted);
-  font-size: 11px;
+  line-height: 1;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.search-box {
-  width: min(320px, 30vw);
-  height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 13px;
-  border: 1px solid var(--music-border);
-  border-radius: 10px;
-  background: var(--music-input-bg);
-  color: var(--music-primary);
-}
-
-.search-box input {
+.header-search-bar input {
   width: 100%;
   min-width: 0;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--music-text);
-  font-size: 12px;
+  font-size: 14px;
 }
 
-.search-box input::placeholder {
+.header-search-bar input::placeholder {
   color: var(--music-muted);
 }
 
-.header-icon,
-.header-theme-toggle,
-.user-avatar {
-  width: 42px;
-  height: 42px;
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-create-btn {
+  height: 44px;
+  border-radius: 22px;
+  padding: 0 20px;
+}
+
+.header-action-btn {
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border: 0;
-  border-radius: 12px;
-  background: var(--music-soft);
-  color: var(--music-primary);
-  font-size: 20px;
+  border: 1px solid var(--music-line);
+  border-radius: 50%;
+  background: var(--music-card);
+  color: var(--music-muted);
+  font-size: 18px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.header-icon:hover,
-.header-theme-toggle:hover {
+.header-action-btn:hover {
   background: var(--music-hover);
+  color: var(--music-primary);
+  border-color: var(--music-primary);
 }
 
-.header-theme-toggle {
-  font-size: 22px;
-}
-
-.user-avatar {
-  overflow: hidden;
+/* User Avatar (Figma Frame 6:37) */
+.header-user-avatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--music-line);
   border-radius: 50%;
   background: var(--music-primary);
-  color: #fff;
+  color: var(--music-primary-text);
+  font-size: 14px;
   font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.user-avatar img {
+.header-user-avatar:hover {
+  transform: scale(1.05);
+  border-color: var(--music-primary);
+}
+
+.header-user-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -97,18 +119,23 @@
 
 @media (max-width: 760px) {
   .top-header {
-    padding: 13px 18px;
+    height: 68px;
+    padding: 0 16px;
   }
 
-  .header-intro {
+  .header-search-bar {
+    width: min(280px, 50vw);
+    height: 40px;
+    padding: 0 14px;
+  }
+
+  .header-create-btn {
     display: none;
   }
 
-  .search-box {
-    width: min(320px, 55vw);
-  }
-
-  .header-actions {
-    gap: 8px;
+  .header-action-btn,
+  .header-user-avatar {
+    width: 38px;
+    height: 38px;
   }
 }
